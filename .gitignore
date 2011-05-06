@@ -1,0 +1,11 @@
+artifacts
+*~
+*.o
+fltk
+.DS_Store
+bmp
+jpg
+scenes
+.bmp
+.jpg
+.ply

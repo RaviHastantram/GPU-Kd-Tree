@@ -1,6 +1,9 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-Triangle * readPLY(char * filename);
+#include "rply.h"
+
+Mesh * readPLY(const char * filename);
+
 
 #endif

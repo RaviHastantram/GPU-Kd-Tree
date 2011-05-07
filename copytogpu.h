@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include "kdtree.h"
+#include "file.h"
 
 void CopytoGPU(Mesh *mesh)
 
@@ -64,6 +65,28 @@ __global__ void CopyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
 	//Replace the triangle list pointer with pointer in host.
 	nodes[i]->objectIDs = triangles;
 }	
+
+void DumpKDTree(Nodes *nodes, int numNodes)
+{
+	//1. Write the LAYOUT_VERSION.
+	//2. Write the Bounds
+	FILE* fp = fopen("GPU-Kd-tree","w+");
+	
+	//3. Write the number of nodes.
+	fprintf(fp,"%d\n" numNodes);
+
+	//4. Write the nodes.
+	for(int i = 0; i < numNodes; i++)
+	{
+		
+	}
+	
+}
+
+void DumpNode(NodeID nodeID)
+{
+	
+}
 
 
 __global__ void BuildKDTree()

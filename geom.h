@@ -1,5 +1,5 @@
-#ifndef __TRIANGLE_H__
-#define __TRIANGLE_H__
+#ifndef __GEOM_H__
+#define __GEOM_H__
 
 struct Point {
 	float x;

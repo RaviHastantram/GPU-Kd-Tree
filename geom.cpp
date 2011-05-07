@@ -1,4 +1,7 @@
-#include "triangle.h"
+#include "kdtypes.h"
+#include "geom.h"
+
+using namespace std;
 
 Mesh * createMesh(uint32 numTriangles, uint32 numPoints)
 {

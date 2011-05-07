@@ -1,5 +1,8 @@
+#include "kdtypes.h"
 #include "util.h"
 #include "geom.h"
+
+using namespace std;
 
 static int vertex_cb(p_ply_argument argument) 
 {

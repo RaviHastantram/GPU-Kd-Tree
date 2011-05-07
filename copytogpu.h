@@ -2,6 +2,7 @@
 #include "kdtree.h"
 
 void CopytoGPU(Mesh *mesh)
+
 {
 	Point* d_points;
 	Triangle* d_triangles;

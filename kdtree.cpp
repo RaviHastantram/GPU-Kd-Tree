@@ -1,7 +1,7 @@
 //--------------------------------------------------------------------
 // stats functions
 //--------------------------------------------------------------------
-void KTree::splitBoundingBox(const uint16 & dim,  float value, 
+void KDTree::splitBoundingBox(const uint16 & dim,  float value, 
 			  const BoundingBox & box, const BoundingBox * boxes)
 {
     for(int i=0;i<3;i++)
@@ -17,7 +17,7 @@ void KTree::splitBoundingBox(const uint16 & dim,  float value,
 }
 
 
-void KTree::computeTreeStats(Node nodeID, TreeStats & stats)
+void KDTree::computeTreeStats(Node nodeID, TreeStats & stats)
 {
 	Node * node = getNode(nodeID);
 	
@@ -75,7 +75,7 @@ void KTree::computeTreeStats(Node nodeID, TreeStats & stats)
 	stats.treeCost=stats.intersectionCost+stats.traversalCost;
 }
 
-void KTree::initTraversalStats()
+void KDTree::initTraversalStats()
 {
 	nIntersect=0;
 	nTraverse=0;

@@ -5,7 +5,9 @@
 
 using namespace std;
 
+
 #include "rply.h"
+
 
 static int vertex_cb(p_ply_argument argument) 
 {

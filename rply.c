@@ -1016,9 +1016,9 @@ static void ply_element_init(p_ply_element element) {
 
 static void ply_property_init(p_ply_property property) {
     property->name[0] = '\0';
-    property->type = -1;
-    property->length_type = -1;
-    property->value_type = -1;
+    property->type = (e_ply_type)(-1);
+    property->length_type = (e_ply_type)(-1);
+    property->value_type = (e_ply_type)(-1);
     property->read_cb = (p_ply_read_cb) NULL;
     property->pdata = NULL;
     property->idata = 0;

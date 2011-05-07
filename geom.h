@@ -1,5 +1,5 @@
-#ifndef __TRIANGLE_H__
-#define __TRIANGLE_H__
+#ifndef __GEOM_H__
+#define __GEOM_H__
 
 struct Point {
 	float x;
@@ -23,7 +23,6 @@ struct Mesh {
 	uint32 numTriangles; // number of triangles
 	uint32 numPoints;
 	Triangle * triangles;	// list of triangles
-	BoundingBox * boxes; // list of bounding boxes
 	Point * points;	// list of points
 };
 

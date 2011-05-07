@@ -174,12 +174,44 @@ typedef struct t_ply_ {
 /* ----------------------------------------------------------------------
  * I/O functions and drivers
  * ---------------------------------------------------------------------- */
-static t_ply_idriver ply_idriver_ascii;
-static t_ply_idriver ply_idriver_binary;
-static t_ply_idriver ply_idriver_binary_reverse;
-static t_ply_odriver ply_odriver_ascii;
-static t_ply_odriver ply_odriver_binary;
-static t_ply_odriver ply_odriver_binary_reverse;
+/* ----------------------------------------------------------------------
+ * Output handlers
+ * ---------------------------------------------------------------------- */
+static int oascii_int8(p_ply ply, double value);
+static int oascii_uint8(p_ply ply, double value);
+static int oascii_int16(p_ply ply, double value) ;
+static int oascii_uint16(p_ply ply, double value);
+static int oascii_int32(p_ply ply, double value) ;
+static int oascii_uint32(p_ply ply, double value) ;
+static int oascii_float32(p_ply ply, double value) ;
+static int oascii_float64(p_ply ply, double value) ;
+static int obinary_int8(p_ply ply, double value);
+static int obinary_uint8(p_ply ply, double value) ;
+static int obinary_int16(p_ply ply, double value) ;
+static int obinary_uint16(p_ply ply, double value) ;
+static int obinary_int32(p_ply ply, double value);
+static int obinary_uint32(p_ply ply, double value);
+static int obinary_float32(p_ply ply, double value);
+static int obinary_float64(p_ply ply, double value);
+/* ----------------------------------------------------------------------
+ * Input  handlers
+ * ---------------------------------------------------------------------- */
+static int iascii_int8(p_ply ply, double *value);
+static int iascii_uint8(p_ply ply, double *value);
+static int iascii_int16(p_ply ply, double *value) ;
+static int iascii_uint16(p_ply ply, double *value) ;
+static int iascii_int32(p_ply ply, double *value) ;
+static int iascii_uint32(p_ply ply, double *value);
+static int iascii_float32(p_ply ply, double *value);
+static int iascii_float64(p_ply ply, double *value) ;
+static int ibinary_int8(p_ply ply, double *value) ;
+static int ibinary_uint8(p_ply ply, double *value);
+static int ibinary_int16(p_ply ply, double *value);
+static int ibinary_uint16(p_ply ply, double *value) ;
+static int ibinary_int32(p_ply ply, double *value);
+static int ibinary_uint32(p_ply ply, double *value) ;
+static int ibinary_float32(p_ply ply, double *value);
+static int ibinary_float64(p_ply ply, double *value);
 
 static int ply_read_word(p_ply ply);
 static int ply_check_word(p_ply ply);
@@ -190,6 +222,67 @@ static int ply_read_chunk_reverse(p_ply ply, void *anybuffer, size_t size);
 static int ply_write_chunk(p_ply ply, void *anybuffer, size_t size);
 static int ply_write_chunk_reverse(p_ply ply, void *anybuffer, size_t size);
 static void ply_reverse(void *anydata, size_t size);
+
+static  t_ply_idriver ply_idriver_ascii = {
+		{   iascii_int8, iascii_uint8, iascii_int16, iascii_uint16,
+			iascii_int32, iascii_uint32, iascii_float32, iascii_float64,
+			iascii_int8, iascii_uint8, iascii_int16, iascii_uint16,
+			iascii_int32, iascii_uint32, iascii_float32, iascii_float64
+		}, /* order matches e_ply_type enum */
+		NULL,
+		"ascii input"
+	};
+
+	static t_ply_idriver ply_idriver_binary = {
+		{	ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
+			ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64,
+			ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
+			ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64
+		},	/* order matches e_ply_type enum */
+		ply_read_chunk,
+		"binary input"
+	};
+
+	static t_ply_idriver ply_idriver_binary_reverse = {
+		{   ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
+			ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64,
+			ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
+			ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64
+		}, /* order matches e_ply_type enum */
+		ply_read_chunk_reverse,
+		"reverse binary input"
+	};
+
+	static t_ply_odriver ply_odriver_ascii = {
+		{   oascii_int8, oascii_uint8, oascii_int16, oascii_uint16,
+			oascii_int32, oascii_uint32, oascii_float32, oascii_float64,
+			oascii_int8, oascii_uint8, oascii_int16, oascii_uint16,
+			oascii_int32, oascii_uint32, oascii_float32, oascii_float64
+		}, /* order matches e_ply_type enum */
+		NULL,
+		"ascii output"
+	};
+
+	static t_ply_odriver ply_odriver_binary = {
+		{   obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
+			obinary_int32, obinary_uint32, obinary_float32, obinary_float64,
+			obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
+			obinary_int32, obinary_uint32, obinary_float32, obinary_float64
+		}, /* order matches e_ply_type enum */
+		ply_write_chunk,
+		"binary output"
+	};
+
+	static t_ply_odriver ply_odriver_binary_reverse = {
+		{	obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
+			obinary_int32, obinary_uint32, obinary_float32, obinary_float64,
+			obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
+			obinary_int32, obinary_uint32, obinary_float32, obinary_float64
+		},/* order matches e_ply_type enum */
+		ply_write_chunk_reverse,
+		"reverse binary output"
+	};
+
 
 /* ----------------------------------------------------------------------
  * String functions
@@ -1016,9 +1109,9 @@ static void ply_element_init(p_ply_element element) {
 
 static void ply_property_init(p_ply_property property) {
     property->name[0] = '\0';
-    property->type = -1;
-    property->length_type = -1;
-    property->value_type = -1;
+    property->type = (e_ply_type)-1;
+    property->length_type = (e_ply_type)-1;
+    property->value_type = (e_ply_type)-1;
     property->read_cb = (p_ply_read_cb) NULL;
     property->pdata = NULL;
     property->idata = 0;
@@ -1076,7 +1169,7 @@ static int ply_read_header_format(p_ply ply) {
     assert(ply && ply->fp && ply->io_mode == PLY_READ);
     if (strcmp(BWORD(ply), "format")) return 0;
     if (!ply_read_word(ply)) return 0;
-    ply->storage_mode = ply_find_string(BWORD(ply), ply_storage_mode_list);
+    ply->storage_mode = (e_ply_storage_mode)ply_find_string(BWORD(ply), ply_storage_mode_list);
     if (ply->storage_mode == (e_ply_storage_mode) (-1)) return 0;
     if (ply->storage_mode == PLY_ASCII) ply->idriver = &ply_idriver_ascii;
     else if (ply->storage_mode == ply_arch_endian()) 
@@ -1116,15 +1209,15 @@ static int ply_read_header_property(p_ply ply) {
     if (!property) return 0;
     /* get property type */
     if (!ply_read_word(ply)) return 0;
-    property->type = ply_find_string(BWORD(ply), ply_type_list);
+    property->type =(e_ply_type) ply_find_string(BWORD(ply), ply_type_list);
     if (property->type == (e_ply_type) (-1)) return 0;
     if (property->type == PLY_LIST) {
         /* if it's a list, we need the base types */
         if (!ply_read_word(ply)) return 0;
-        property->length_type = ply_find_string(BWORD(ply), ply_type_list);
+        property->length_type = (e_ply_type) ply_find_string(BWORD(ply), ply_type_list);
         if (property->length_type == (e_ply_type) (-1)) return 0;
         if (!ply_read_word(ply)) return 0;
-        property->value_type = ply_find_string(BWORD(ply), ply_type_list);
+        property->value_type = (e_ply_type) ply_find_string(BWORD(ply), ply_type_list);
         if (property->value_type == (e_ply_type) (-1)) return 0;
     }
     /* get property name */
@@ -1413,66 +1506,8 @@ static int ibinary_float64(p_ply ply, double *value) {
 /* ----------------------------------------------------------------------
  * Constants
  * ---------------------------------------------------------------------- */
-static t_ply_idriver ply_idriver_ascii = {
-    {   iascii_int8, iascii_uint8, iascii_int16, iascii_uint16,
-        iascii_int32, iascii_uint32, iascii_float32, iascii_float64,
-        iascii_int8, iascii_uint8, iascii_int16, iascii_uint16,
-        iascii_int32, iascii_uint32, iascii_float32, iascii_float64
-    }, /* order matches e_ply_type enum */
-    NULL,
-    "ascii input"
-};
 
-static t_ply_idriver ply_idriver_binary = {
-    {   ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
-        ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64,
-        ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
-        ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64
-    }, /* order matches e_ply_type enum */
-    ply_read_chunk,
-    "binary input"
-};
-
-static t_ply_idriver ply_idriver_binary_reverse = {
-    {   ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
-        ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64,
-        ibinary_int8, ibinary_uint8, ibinary_int16, ibinary_uint16,
-        ibinary_int32, ibinary_uint32, ibinary_float32, ibinary_float64
-    }, /* order matches e_ply_type enum */
-    ply_read_chunk_reverse,
-    "reverse binary input"
-};
-
-static t_ply_odriver ply_odriver_ascii = {
-    {   oascii_int8, oascii_uint8, oascii_int16, oascii_uint16,
-        oascii_int32, oascii_uint32, oascii_float32, oascii_float64,
-        oascii_int8, oascii_uint8, oascii_int16, oascii_uint16,
-        oascii_int32, oascii_uint32, oascii_float32, oascii_float64
-    }, /* order matches e_ply_type enum */
-    NULL,
-    "ascii output"
-};
-
-static t_ply_odriver ply_odriver_binary = {
-    {   obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
-        obinary_int32, obinary_uint32, obinary_float32, obinary_float64,
-        obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
-        obinary_int32, obinary_uint32, obinary_float32, obinary_float64
-    }, /* order matches e_ply_type enum */
-    ply_write_chunk,
-    "binary output"
-};
-
-static t_ply_odriver ply_odriver_binary_reverse = {
-    {   obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
-        obinary_int32, obinary_uint32, obinary_float32, obinary_float64,
-        obinary_int8, obinary_uint8, obinary_int16, obinary_uint16,
-        obinary_int32, obinary_uint32, obinary_float32, obinary_float64
-    }, /* order matches e_ply_type enum */
-    ply_write_chunk_reverse,
-    "reverse binary output"
-};
-
+	
 /* ----------------------------------------------------------------------
  * Copyright (C) 2003 Diego Nehab.  All rights reserved.
  *

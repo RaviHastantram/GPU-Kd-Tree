@@ -6,14 +6,13 @@ void KDTree::splitBoundingBox(const uint16 & dim,  float value,
 {
     for(int i=0;i<3;i++)
     {
-		boxes[0].min[i]=box.min[i];
-		boxes[0].max[i]=box.max[i];
-		boxes[1].min[i]=box.min[i];
-		boxes[1].max[i]=box.max[i];	
+		pair[0].min[i]=box.min[i];
+		pair[0].max[i]=box.max[i];
+		pair[1].min[i]=box.min[i];
+		pair[1].max[i]=box.max[i];	
     }
-    boxes[0].max[dim] = value;
-    boxes[1].min[dim]  = value;	
-    return pair;
+    pair[0].max[dim] = value;
+    pair[1].min[dim]  = value;	
 }
 
 
@@ -197,7 +196,6 @@ Node * KDTree::getNode(NodeID id)
 //------------------------------------------------------------------
 // leaves
 //------------------------------------------------------------------
-
 uint32 KDTree::size(Node * n) const
 {
 	return n->v.size;

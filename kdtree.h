@@ -1,19 +1,19 @@
 #ifndef __KDTREE_H__
 #define __KDTREE_H__
 
-#define SETSPLITNONE(idx) idx=(idx & 0x3FFFFFFF) // 0100 0000 0000 0000
-#define SETSPLITX(idx) idx=((idx & 0x3FFFFFFF) | 0x40000000) // 0100 0000 0000 0000
-#define SETSPLITY(idx) idx=((idx & 0x3FFFFFFF) | 0x80000000) // 1000 0000 0000 0000
-#define SETSPLITZ(idx) idx=((idx & 0x3FFFFFFF) | 0xC0000000) // 1100 0000 0000 0000
-#define SETINDEX(idx,index) idx=(idx & 0xC0000000) | (0x3FFFFFFF & index)
-#define GETINDEX(idx) (idx & 0x3FFFFFFF)
-#define GETSPLIT(idx) (id & 0xC0000000) >> 30)
-#define ISLEAF(idx) ((idx & 0xC0000000) == 0x00000000)   
-#define ISSPLITX(idx) (idx & 0xC0000000) == 0x00000001) 
-#define ISSPLITY(idx) (idx & 0xC0000000) == 0x00000002) 
-#define ISSPLITZ(idx) (idx & 0xC0000000) == 0x00000003) 
+#define SETSPLITNONE(id) id=(id & 0x3FFFFFFF) // 0100 0000 0000 0000
+#define SETSPLITX(id) id=((id & 0x3FFFFFFF) | 0x40000000) // 0100 0000 0000 0000
+#define SETSPLITY(id) id=((id & 0x3FFFFFFF) | 0x80000000) // 1000 0000 0000 0000
+#define SETSPLITZ(id) id=((id & 0x3FFFFFFF) | 0xC0000000) // 1100 0000 0000 0000
+#define SETINDEX(id,index) id=(id & 0xC0000000) | (0x3FFFFFFF & index)
+#define GETINDEX(id) (id & 0x3FFFFFFF)
+#define GETSPLITDIM(id) (id & 0xC0000000) >> 30)
+#define ISLEAF(id) ((id & 0xC0000000) == 0x00000000)   
+#define ISSPLITX(id) (id & 0xC0000000) == 0x00000001) 
+#define ISSPLITY(id) (id & 0xC0000000) == 0x00000002) 
+#define ISSPLITZ(id) (id & 0xC0000000) == 0x00000003) 
 
-typedef uint32 NodeIndex;
+typedef uint32 NodeID;
 
 struct  TreeStats
 {
@@ -99,10 +99,11 @@ public:
 	
 	void build();
 	void verify();
-	void splitBox(const uint16 & dim,  
-				  float value, 
-				  const BoundingBox & bbox, 
-				  const BoundingBox * bboxes);
+	void splitBoundingBox(const uint16 & dim,  
+						  float value, 
+						  const BoundingBox & bbox, 
+						  const BoundingBox * bboxes) const;
+	float boxArea(const BoundingBox & bbox) const;
 	
 	//---------------------------------------------------------------------
 	// split functions
@@ -126,22 +127,27 @@ public:
 	// internal nodes
 	//--------------------------------------------------------------------
 	
+	Node * getNode(NodeID nodeID);
 	Node * left(Node * n) const;
 	Node * right(Node * n) const;
-	void  setLeft(Node * n, KNode * l);
-	void setRight(Node * n, KNode * r);
+	NodeID leftID(Node * n) const;
+	NodeID rightID(Node * n) const;
+	void  setLeft(Node * n, Node * l);
+	void setRight(Node * n, Node * r);
 	float getSplit(Node * n) const;
 	void setSplit(Node * n, float value);
+	NodeID * children(Node * n);
+	
 	
 	//------------------------------------------------------------------
 	// leaves
 	//------------------------------------------------------------------
 	
-	int size(Node * n) const;   
-	Triangles ** triangles(KNode * n) const;
-	Triangle * get(KNode * k, int i) const;
-	int put(KNode * n, Geometry * o, int i);
-	void swap(Node * n, int i, int j) const;	
+	uint32 size(Node * n) const;   
+	uint32 * triangles(Node * n) const;
+	Triangle * get(Node * k, uint32 triangleID) const;
+	int put(KNode * n, Geometry * o, uint32 i);
+	
 };
 
 #endif

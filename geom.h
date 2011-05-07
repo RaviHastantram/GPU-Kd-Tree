@@ -20,10 +20,14 @@ struct BoundingBox {
 };
 
 struct Mesh {
-	uint32 size; // number of triangles
+	uint32 numTriangles; // number of triangles
+	uint32 numPoints;
 	Triangle * triangles;	// list of triangles
 	BoundingBox * boxes; // list of bounding boxes
 	Point * points;	// list of points
 };
+
+Mesh * createMesh(uint32 size);
+void destroyMesh();
 
 #endif

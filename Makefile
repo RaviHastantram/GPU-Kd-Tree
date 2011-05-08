@@ -5,7 +5,7 @@
 LOCAL = /usr/local
 USR  = /usr/
 
-CC = g++
+CC = nvcc
 
 INCLUDE = -I$(LOCAL)/include
 LIBDIR = -L$(LOCAL)/lib

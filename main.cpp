@@ -10,7 +10,8 @@ int main(int argc, char  ** argv)
 {
 	char * inputFile = argv[1];
 	// load ply
-	loadMeshFromPLY(inputFile);
+	Mesh * m = loadMeshFromPLY(inputFile);
+	printMesh(m);
 	
 	// ship to gpu
 	// import from gpu

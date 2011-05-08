@@ -2,16 +2,12 @@
 #define __GEOM_H__
 
 struct Point {
-	float x;
-	float y;
-	float z;
+	float values[3];
 };
 
 struct Triangle {
 	uint32 index; // index of this triangle
-	uint32 id1;	// index to first point
-	uint32 id2;	// index to second point
-	uint32 id3;	// index to third point
+	uint32 ids[3];
 };
 
 struct BoundingBox {

@@ -11,5 +11,6 @@ using namespace std;
 static int vertex_cb(p_ply_argument argument);
 static int face_cb(p_ply_argument argument);
 Mesh * loadMeshFromPLY(const char * filename);
+void printMesh(Mesh * m);
 
 #endif

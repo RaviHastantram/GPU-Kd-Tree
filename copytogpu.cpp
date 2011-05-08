@@ -1,6 +1,8 @@
 #include "Mesh.h"
 #include "kdtree.h"
 #include "file.h"
+#include "iostream.h"
+typedef unsigned __int64 uint64_t;
 
 void CopytoGPU(Mesh *mesh)
 
@@ -66,26 +68,82 @@ __global__ void CopyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
 	nodes[i]->objectIDs = triangles;
 }	
 
-void DumpKDTree(Nodes *nodes, int numNodes)
+void DumpKDTree(KDTree *kdtree)
 {
+	ofstream file("GPU-Kd-tree",ios::out | ios::binary);
+
+	char *buffer = new char[100];
+	
+	unsigned int version = 1;
 	//1. Write the LAYOUT_VERSION.
-	//2. Write the Bounds
-	FILE* fp = fopen("GPU-Kd-tree","w+");
+	file.write((char*)&version,sizeof(unsigned int));
+
+	//2.TODO Write the Bounds
 	
 	//3. Write the number of nodes.
-	fprintf(fp,"%d\n" numNodes);
+	uint64_t numNodes = kdtree->numNodes;
+	file.write((char*)&numNodes,sizeof(uint64_t));
 
 	//4. Write the nodes.
-	for(int i = 0; i < numNodes; i++)
+	for(int i = 0; i < kdtree->numNodes; i++)
 	{
+		DumpNode(file,i,kdtree);		
+	}
+
+	//5.Write the number of leaves
+	uint64_t leafcount = kdtree->leafcount;
+	file.write((char*)&leafcount,sizeof(uint64_t));
+
+	//6. Write the triangles
+	for(int i = 0; i < kdtree->numNodes; i++)
+	{
+		if(ISLEAF(i))
+		{	
+			DumpTriangles(file,i,kdtree);
+		}
+	}
+
+	file.close();
+}
+
+void DumpNode(ofstream& file,NodeID nodeID,KDTree *kdtree)
+{
+	Node* node = kdtree->getNode(nodeID);
+	uint32 data0 = 0;
+	uint32 data1 = 0; 
+	if(ISLEAF(i))
+	{
+		data1 = i;
+		file.write((char*)&data0, sizeof(uint32));
+		file.write((char*)&data1, sizeof(uint32));
+	}
+	else
+	{
+		data0 = GETINDEX(nodeID) << 2;
+		data0 |= GETSPLITDIM(nodeID);
 		
+		file.write((char*)&data0, sizeof(uint32));
+		file.write((char*)&node->v.split, sizeof(float));
 	}
 	
 }
 
-void DumpNode(NodeID nodeID)
+void DumpTriangles(ofstream& file, NodeID nodeID, KDTree *kdtree)
 {
-	
+	Node* node = kdtree->getNode(nodeID);
+	//7. Write the length of the triangle list
+	uint64_t numTriangles = node->v.size;
+	file.write((char*)&numTriangles,sizeof(uint64_t));
+
+	//8. Write the triangles
+	uint32 triangleID = 0;
+	uint32 triangleIndex = 0; //index of the triangle in the PLY file
+	for(int i = 0; i < node->v.size);
+	{
+		triangleID = GETINDEX(node->objectIDs[i]);
+		triangleIndex = kdtree->mesh->triangles[triangleID].index;
+		file.write((char*)&triangleIndex,sizeof(triangleIndex));
+	}
 }
 
 

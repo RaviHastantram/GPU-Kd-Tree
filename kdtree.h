@@ -40,8 +40,9 @@ struct  TreeStats
 };
 
 struct Node {
-	uint32 * objectIDs;  //  1.  if internal: id of left child, followed by id of right child
-						 //  2.  if leaf: list of triangle ids
+	uint32 * objectIDs;  
+			//  1.  if internal: id of left child, followed by id of right child
+			//  2.  if leaf: list of triangle ids
 	union {
 		float split;
 		uint32 size;

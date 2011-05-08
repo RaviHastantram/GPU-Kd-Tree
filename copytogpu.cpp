@@ -110,11 +110,12 @@ void DumpNode(ofstream& file,NodeID nodeID,KDTree *kdtree)
 {
 	Node* node = kdtree->getNode(nodeID);
 	uint32 data0 = 0;
-	uint32 data1 = 0;
+	uint32 data1 = 0; 
 	if(ISLEAF(i))
 	{
-		//TODO
-
+		data1 = i;
+		file.write((char*)&data0, sizeof(uint32));
+		file.write((char*)&data1, sizeof(uint32));
 	}
 	else
 	{

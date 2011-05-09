@@ -84,6 +84,8 @@ public:
 	// stats functions
 	//--------------------------------------------------------------------
 	
+	void printTreeStats();
+	void computeTreeStats();
 	void computeTreeStats(Node * node, TreeStats & stats);
 	static void initTraversalStats();
 	static void printTraversalStats();
@@ -144,8 +146,8 @@ public:
 	// leaves
 	//------------------------------------------------------------------
 	
-	uint32 size(Node * n) const;   
-	uint32 * triangles(Node * n) const;
+	static uint32 size(Node * n) const;   
+	static uint32 * triangles(Node * n) const;
 	Triangle * get(Node * k, uint32 triangleID) const;
 	int put(KNode * n, Geometry * o, uint32 i);
 	

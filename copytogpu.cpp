@@ -1,16 +1,40 @@
 #include "Mesh.h"
 #include "kdtree.h"
-#include "file.h"
-#include "iostream.h"
+#include "kdtypes.h"
+#include <cfile>
+#include <iostream>
+
+using namespace std;
+
 typedef unsigned __int64 uint64_t;
+
+struct NodeList {
+	int size;
+	int capacity;
+	Node ** nodes;
+};
+
+struct TriangleList {
+	int size;
+	int capacity;
+	Triangle * triangles;
+};
+
+__device__ Point* d_points;
+__device__ Triangle* d_triangles;
+__device__ Mesh* d_mesh;
+__device__ uint32 d_numActiveTriangles;
+__device__ uint32 d_numActiveNodes;
+__device__ bool treeBuildInitialized=false;
+__device__ NodeList * activeNodes;
+__device__ NodeList * pendingNodes;
+__device__ NodeList * completedNodes;
+__device__ TriangleList * activeTriangles;
+
 
 void CopytoGPU(Mesh *mesh)
 
 {
-	Point* d_points;
-	Triangle* d_triangles;
-	Mesh* d_mesh;
-
 	//Copy the Points list
 	int size = sizeof(Point)*(mesh->numPoints);
 	cudaMalloc(&d_points,size);
@@ -27,6 +51,95 @@ void CopytoGPU(Mesh *mesh)
 	cudaMemcpy(d_mesh,mesh,size,cudaMemcpyHostToDevice);
 }
 
+int numActiveNodes()
+{
+	uint32 numNodes=-1;
+	 
+	if(cudaMemcpyFromSymbol(&numNodes,
+				"d_numActiveNodes",
+				sizeof(uint32),
+				0,
+				cudaMemcpyDeviceToHost) != cudaSuccess)
+	{
+		printf("Copying d_numActiveNodes failed.\n"):
+	}
+	return numNodes;;
+}
+
+int numActiveTriangles()
+{
+	uint32 numTriangles=-1;
+	
+	if(cudaMemcpyFromSymbol(&numTriangles,
+				"d_numActiveTriangles",
+				sizeof(uint32),
+				0,
+				cudaMemcpyDeviceToHost) != cudaSuccess)
+	{
+		printf("Copying d_numActiveTriangles failed.\n");
+	}
+	return numTriangles;
+}
+
+
+//////////////////
+//
+//
+/////////////////
+__device__ void addNode(Node * node, NodeID nodeID, NodeList * list)
+{
+	if(list->size==list->capacity)
+	{
+		list->size++;
+		list->capacity=2*list->size:
+		Nodes * nodes;
+		Nodes * old=list->nodes;
+		cudaMalloc( (void **)&nodes,list->capacity);
+		cudaMemcpy(nodes, list->nodes, list->size*sizeof(Node), cudaMemcpyDeviceToDevice);
+		list->nodes=nodes;
+		cudaFree(old);	
+	} 
+
+	uint32 count=2;
+	if(ISLEAF(nodeID))
+	{	
+		count=KDTree::size(node);	
+	}
+	list->nodes[list->size-1]=*node;
+}
+
+__device__ void initList(NodeList * list)
+{
+	list->size=0;
+	list->capacity=1024;
+	cudaMalloc((void **)&list->nodes, list->capacity);
+}
+
+__device__ void clearList(NodeList * list) 
+{
+	cudaFree(list->nodes);
+	initList(list);
+}
+
+__device__ void swapLists(NodeList ** list1, NodeList ** list2)
+{
+	NodeList * temp=*list1;
+	*list1=*list2;
+	*list2=*temp;
+}
+
+__device__ Node * getNodeAt(uint32 idx, NodeList * list)
+{
+	return list->nodes[idx];
+}
+
+__device__ void InitializeTreeBuild()
+{
+	d_numActiveTriangles=d_mesh->numTriangles;
+	d_numActiveNodes=1;	
+}
+
+// KERNEL
 __global__ void CopytoHost(KDTree *kdtree)
 {
 	//Allocate the Nodes array on the host
@@ -40,6 +153,7 @@ __global__ void CopytoHost(KDTree *kdtree)
 	}	
 }
 
+// KERNEL
 __global__ void CopyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
 {
 	Node* node = kdtree->getNode(nodeID);

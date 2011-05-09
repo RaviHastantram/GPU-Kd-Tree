@@ -11,12 +11,32 @@ int main(int argc, char  ** argv)
 	char * inputFile = argv[1];
 	// load ply
 	Mesh * m = loadMeshFromPLY(inputFile);
-	printMesh(m);
+	KDtree * kd = new KDTree;
+	//printMesh(m);
 	
-	// ship to gpu
-	// import from gpu
-	// compute some stats (check goodness of tree)
-	// render
+	CopytoGPU(m);
+
+	numActiveNodes=1;
+	numActiveTriangles=m->numTriangles;
+
+	while(numActiveNodes>0)
+	{
+		threadsPerNode = threadsPerNode(numActiveNodes,numActiveTriangles);
+		
+		computeCost<<<numActiveNodes,threadsPerNode>>();
+
+		splitNodes<<<numActiveNodes,threadsPerNode>>();
+
+		numActiveNodes = numActiveNodes();
+		numActiveTriangles = numActiveTriangles();		
+	}
+
+	CopytoHost(kdtree);
+
+	kd->verifyTree();
+	kd->printTreeStats();
+
+	DumpKDTree(kd);
 	
 	return 0;
 }

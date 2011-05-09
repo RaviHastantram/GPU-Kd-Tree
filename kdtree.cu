@@ -1,5 +1,9 @@
 #include "kdtree.h"
 
+#include <iostream>
+
+using namespace std;
+
 uint32 KDTree::MIN_LEAF_SIZE=1;
 uint32 KDTree::MAX_DEPTH=25;
 float KDTree::K_ISECT=10;

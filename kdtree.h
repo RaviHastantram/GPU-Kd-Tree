@@ -91,10 +91,9 @@ public:
 	
 	void printTreeStats();
 	void computeTreeStats();
-	void computeTreeStats(Node * node, TreeStats & stats);
 	void computeTreeStats(NodeID nodeID, TreeStats & stats);
 	void initTraversalStats();
-	 void printTraversalStats();
+	void printTraversalStats();
 
 	//--------------------------------------------------------------------
 	// traversal functions

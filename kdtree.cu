@@ -1,21 +1,22 @@
+#include "kdtree.h"
+
+uint32 KDTree::MIN_LEAF_SIZE=1;
+uint32 KDTree::MAX_DEPTH=25;
+float KDTree::K_ISECT=10;
+float KDTree::K_TRAV=1;	
+float KDTree::lambda=0.8;
+
 //--------------------------------------------------------------------
 // stats functions
 //--------------------------------------------------------------------
-#include "kdtree.h"
-void KDTree::splitBoundingBox(const uint32& dim,  float value, 
-			  const BoundingBox & box, BoundingBox * pair)
+
+void KDTree::printTreeStats()
 {
-    for(int i=0;i<3;i++)
-    {
-		pair[0].min[i]=box.min[i];
-		pair[0].max[i]=box.max[i];
-		pair[1].min[i]=box.min[i];
-		pair[1].max[i]=box.max[i];	
-    }
-    pair[0].max[dim] = value;
-    pair[1].min[dim]  = value;	
 }
 
+void KDTree::computeTreeStats()
+{
+}
 
 void KDTree::computeTreeStats(NodeID nodeID, TreeStats & stats)
 {
@@ -44,8 +45,8 @@ void KDTree::computeTreeStats(NodeID nodeID, TreeStats & stats)
 		rstats.sceneArea=stats.sceneArea;
 		rstats.box=pair[1];
 		
-		computeTreeStats(left(node),lstats);
-		computeTreeStats(right(node),rstats);
+		computeTreeStats(leftID(node),lstats);
+		computeTreeStats(rightID(node),rstats);
 		
 		stats.traversalCost=lstats.traversalCost+rstats.traversalCost+K_TRAV*PR;
 		stats.intersectionCost=lstats.intersectionCost+rstats.intersectionCost;
@@ -103,6 +104,29 @@ void KDTree::printTraversalStats()
 // build functions
 //--------------------------------------------------------------------
 
+float KDTree::boxArea(const BoundingBox & box) const
+{
+	float diffx = box.max[0]-box.min[0];
+	float diffy = box.max[1]-box.min[1];
+	float diffz = box.max[2]-box.min[2];
+	float area = 2*diffx*diffy + 2*diffx*diffz + 2*diffy*diffz;
+	return area;
+}
+	
+void KDTree::splitBoundingBox(const uint32& dim,  float value, 
+			  const BoundingBox & box, BoundingBox * pair)
+{
+    for(int i=0;i<3;i++)
+    {
+		pair[0].min[i]=box.min[i];
+		pair[0].max[i]=box.max[i];
+		pair[1].min[i]=box.min[i];
+		pair[1].max[i]=box.max[i];	
+    }
+    pair[0].max[dim] = value;
+    pair[1].min[dim]  = value;	
+}
+
 void KDTree::build()
 {
 	// TODO
@@ -123,7 +147,7 @@ void KDTree::build()
 //--------------------------------------------------------------------
 // general functions
 //--------------------------------------------------------------------
-inline void  KDTree::destroy(NodeID nodeID)
+void  KDTree::destroy(NodeID nodeID)
 {
 	Node * node = getNode(nodeID);
 	if(ISLEAF(nodeID))

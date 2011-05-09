@@ -1,6 +1,6 @@
 //#include "Mesh.h"
 #include "kdtree.h"
-#include <linux/types.h>
+#include <sys/types.h>
 #include <cuda.h>
 #include <cassert>
 #include <cstdio>
@@ -10,7 +10,7 @@ using namespace std;
 //#include "file.h"
 
 
-typedef __u64 uint64_t;
+typedef u_int64_t uint64_t;
 
 __device__ bool treeBuildInitialized=false;
 __device__ Point* d_points;

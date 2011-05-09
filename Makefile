@@ -13,12 +13,15 @@ LIBS  =
 
 CFLAGS =  -m32 
 
-.SUFFIXES: .o .cpp .cxx 
+.SUFFIXES: .o .cpp .cxx .cu
 
 .o: 
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
 
 .cpp.o: 
+	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
+
+.cu.o:
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
 
 ALL.O = main.o geom.o util.o rply.o gpuBuilder.o

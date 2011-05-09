@@ -14,7 +14,7 @@ int main(int argc, char  ** argv)
 	KDtree * kd = new KDTree;
 	//printMesh(m);
 	
-	CopytoGPU(m);
+	copyToGPU(m);
 
 	numActiveNodes=1;
 	numActiveTriangles=m->numTriangles;
@@ -31,12 +31,12 @@ int main(int argc, char  ** argv)
 		numActiveTriangles = numActiveTriangles();		
 	}
 
-	CopytoHost(kdtree);
+	copyToHost(kdtree);
 
 	kd->verifyTree();
 	kd->printTreeStats();
 
-	DumpKDTree(kd);
+	dumpKDTree(kd);
 	
 	return 0;
 }

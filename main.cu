@@ -1,47 +1,46 @@
-
 #include <iostream>
-#include <cuda.h>
+
+#include "kdtypes.h"
+#include "util.h"
+#include "geom.h"
+#include "kdtree.h"
+#include "gpuBuilder.h"
+#include "util.h"
 
 using namespace std;
 
-__global__ void computecost()
-{
-	
-}
-
-__global__ void simpleKernel(int* d_a,int size)
-{
-	//Initialized in the device
-	int arrayIndex = threadIdx.x + blockIdx.x*gridDim.x; 
-	d_a[arrayIndex] = arrayIndex;
-}
-
 int main(int argc, char  ** argv)
 {
+	char * inputFile = argv[1];
 	// load ply
-	// ship to gpu
-	// import from gpu
-	// compute some stats (check goodness of tree)
-	// render
-	int *h_a, *d_a;
-	int size = 100*sizeof(int);
-	h_a = (int*)malloc(size);
+	Mesh * m = loadMeshFromPLY(inputFile);
+	KDTree * kd = new KDTree;
+	//printMesh(m);
 	
-	//Allocate memory on Device
-	cudaMalloc(&d_a,size);
-	//Launch the kernel.
-	simpleKernel <<< 10,10 >>> (d_a,size);
-	//Copy the data back to host
-	cudaMemcpy(h_a,d_a,size,cudaMemcpyDeviceToHost);
+	copyToGPU(m);
 
-	for(int i = 0; i < 100; i++)
+	int numActiveNodes=1;
+	int numActiveTriangles=m->numTriangles;
+	int threadsPerNode = 0;
+
+	while(numActiveNodes>0)
 	{
-		cout << h_a[i] << " " ;
+		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
+		
+		computeCost <<< numActiveNodes,threadsPerNode >>>();
+
+		splitNodes<<<numActiveNodes,threadsPerNode>>>();
+
+		numActiveNodes = getActiveNodes();
+		numActiveTriangles = getActiveTriangles();		
 	}
-	cout << endl;
-	cudaFree(d_a);
-	free(h_a);
+
+	copyToHost(kd);
+
+	//kd->verifyTree();
+	kd->printTreeStats();
+
+	dumpKDTree(kd);
+	
 	return 0;
 }
-
-

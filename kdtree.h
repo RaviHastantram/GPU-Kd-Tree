@@ -7,11 +7,16 @@
 #define SETSPLITZ(id) id=((id & 0x3FFFFFFF) | 0xC0000000) // 1100 0000 0000 0000
 #define SETINDEX(id,index) id=(id & 0xC0000000) | (0x3FFFFFFF & index)
 #define GETINDEX(id) (id & 0x3FFFFFFF)
-#define GETSPLITDIM(id) (id & 0xC0000000) >> 30)
+#define GETSPLITDIM(id) ((id & 0xC0000000) >> 30)
 #define ISLEAF(id) ((id & 0xC0000000) == 0x00000000)   
 #define ISSPLITX(id) (id & 0xC0000000) == 0x00000001) 
 #define ISSPLITY(id) (id & 0xC0000000) == 0x00000002) 
 #define ISSPLITZ(id) (id & 0xC0000000) == 0x00000003) 
+
+#include "kdtypes.h"
+#include "geom.h"
+#include <iostream>
+using namespace std;
 
 typedef uint32 NodeID;
 
@@ -87,8 +92,9 @@ public:
 	void printTreeStats();
 	void computeTreeStats();
 	void computeTreeStats(Node * node, TreeStats & stats);
-	static void initTraversalStats();
-	static void printTraversalStats();
+	void computeTreeStats(NodeID nodeID, TreeStats & stats);
+	void initTraversalStats();
+	 void printTraversalStats();
 
 	//--------------------------------------------------------------------
 	// traversal functions
@@ -102,10 +108,10 @@ public:
 	
 	void build();
 	void verify();
-	void splitBoundingBox(const uint16 & dim,  
+	void splitBoundingBox(const uint32& dim,  
 						  float value, 
 						  const BoundingBox & bbox, 
-						  const BoundingBox * bboxes) const;
+						  BoundingBox * bboxes);
 	float boxArea(const BoundingBox & bbox) const;
 	
 	//---------------------------------------------------------------------
@@ -124,7 +130,7 @@ public:
 	// general functions
 	//--------------------------------------------------------------------
 	
-	void  destroy(Node * k);
+	void  destroy(NodeID);
 		
 	//--------------------------------------------------------------------
 	// internal nodes
@@ -146,10 +152,10 @@ public:
 	// leaves
 	//------------------------------------------------------------------
 	
-	static uint32 size(Node * n) const;   
-	static uint32 * triangles(Node * n) const;
+	static uint32 size(Node * n) ;   
+	static uint32 * triangles(Node * n) ;
 	Triangle * get(Node * k, uint32 triangleID) const;
-	int put(KNode * n, Geometry * o, uint32 i);
+	void put(Node * n, uint32 triangleID, uint32 i);
 	
 };
 

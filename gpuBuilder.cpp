@@ -1,7 +1,8 @@
 #include "kdtree.h"
 #include "kdtypes.h"
 #include "lists.h"
-#include <cfile>
+#include "gpuBuilder.h"
+//#include <cfile>
 #include <cassert>
 #include <cstdio>
 #include <iostream>
@@ -13,7 +14,7 @@ using namespace std;
 // Tree Building
 //
 ///////////////////////////
-uint32 numActiveNodes()
+uint32 getActiveNodes()
 {
 	uint32 numNodes=0;
 	 
@@ -28,7 +29,12 @@ uint32 numActiveNodes()
 	return numNodes;
 }
 
-uint32 numActiveTriangles()
+uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
+{
+
+}
+
+uint32 getActiveTriangles()
 {
 	uint32 numTriangles=0;
 	

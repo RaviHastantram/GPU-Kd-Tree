@@ -1,6 +1,8 @@
 #ifndef __LISTS_H__
 #define __LISTS_H__
 
+#include <cuda.h>
+#include "kdtree.h"
 struct NodeList {
 	int size;
 	int capacity;

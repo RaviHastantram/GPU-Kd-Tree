@@ -7,13 +7,13 @@ USR  = /usr/
 
 CC = nvcc
 
-INCLUDE = -I$(LOCAL)/include
+INCLUDE = -I$(LOCAL)/include 
 LIBDIR = -L$(LOCAL)/lib
 LIBS  =
 
 CFLAGS =  -m32 
 
-.SUFFIXES: .o .cpp .cxx
+.SUFFIXES: .o .cpp .cxx 
 
 .o: 
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
@@ -21,7 +21,7 @@ CFLAGS =  -m32
 .cpp.o: 
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
 
-ALL.O = main.o geom.o util.o rply.o
+ALL.O = main.o geom.o util.o rply.o gpuBuilder.o
 
 gpukd: $(ALL.O)
 	$(CC) $(CFLAGS) -o $@ $(ALL.O) $(INCLUDE) $(LIBDIR) $(LIBS)

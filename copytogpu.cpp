@@ -17,7 +17,7 @@ struct NodeList {
 struct TriangleList {
 	int size;
 	int capacity;
-	Triangle * triangles;
+	Triangle ** triangles;
 };
 
 __device__ Point* d_points;
@@ -26,10 +26,10 @@ __device__ Mesh* d_mesh;
 __device__ uint32 d_numActiveTriangles;
 __device__ uint32 d_numActiveNodes;
 __device__ bool treeBuildInitialized=false;
-__device__ NodeList * activeNodes;
-__device__ NodeList * pendingNodes;
-__device__ NodeList * completedNodes;
-__device__ TriangleList * activeTriangles;
+__device__ NodeList * activeNodes=0;
+__device__ NodeList * pendingNodes=0;
+__device__ NodeList * completedNodes=0;
+__device__ TriangleList * activeTriangles=0;
 
 
 void CopytoGPU(Mesh *mesh)
@@ -82,37 +82,36 @@ int numActiveTriangles()
 }
 
 
-//////////////////
+////////////////////////
 //
+//  NodeList functions
 //
-/////////////////
+///////////////////////
 __device__ void addNode(Node * node, NodeID nodeID, NodeList * list)
 {
 	if(list->size==list->capacity)
 	{
-		list->size++;
-		list->capacity=2*list->size:
-		Nodes * nodes;
-		Nodes * old=list->nodes;
-		cudaMalloc( (void **)&nodes,list->capacity);
-		cudaMemcpy(nodes, list->nodes, list->size*sizeof(Node), cudaMemcpyDeviceToDevice);
-		list->nodes=nodes;
-		cudaFree(old);	
+		list->capacity=2*(list->size+1);
+		Nodes * pNew;
+		cudaMalloc( (void **)&pNew,list->capacity*sizeof(Node *));
+		cudaMemcpy(pNew, list->nodes, list->size*sizeof(Node), cudaMemcpyDeviceToDevice);
+		cudaFree(list->nodes);
+		list->nodes=pNew;
 	} 
-
 	uint32 count=2;
 	if(ISLEAF(nodeID))
 	{	
 		count=KDTree::size(node);	
 	}
-	list->nodes[list->size-1]=*node;
+	list->nodes[list->size-1]=node;
+	list->size++;
 }
 
 __device__ void initList(NodeList * list)
 {
 	list->size=0;
 	list->capacity=1024;
-	cudaMalloc((void **)&list->nodes, list->capacity);
+	cudaMalloc((void **)&list->nodes, list->capacity*sizeof(Node *));
 }
 
 __device__ void clearList(NodeList * list) 
@@ -137,6 +136,36 @@ __device__ void InitializeTreeBuild()
 {
 	d_numActiveTriangles=d_mesh->numTriangles;
 	d_numActiveNodes=1;	
+}
+
+////////////////////////
+//
+//  activeTriangles functions
+//
+///////////////////////
+__device__ void InitActiveTriangles(uint32 numBlocks)
+{
+	if(activeTriangles!=0)
+	{
+		cudaFree(activeTriangles);
+	}
+	cudaMalloc( (void **) activeTriangleList, numBlocks*sizeof(activeTriangles));
+}
+
+__device__ void AddTriangle(Triangle * t, int listIndex)
+{
+	TriangleList * list = &activeTriangles[listIndex];
+	if(list->size==list->capacity)
+	{
+		list->capacity=2*list->size;
+		Triangle * pNew;
+		cudaMalloc( (void **) &pNew, list->capacity*sizeof(Triangle *));
+		cudaMemcpy( pNew, list->triangles, sizeof(Triangle *)*list->size); 
+		cudaFree(list->triangle);
+		list->triangles=pNew;
+	}
+	list->triangles[list->size-1]=t;
+	list->size++;
 }
 
 // KERNEL

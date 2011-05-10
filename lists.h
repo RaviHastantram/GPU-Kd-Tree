@@ -3,6 +3,7 @@
 
 #include <cuda.h>
 #include "kdtree.h"
+
 struct NodeList {
 	int size;
 	int capacity;

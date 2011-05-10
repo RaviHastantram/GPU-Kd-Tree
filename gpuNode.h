@@ -1,0 +1,67 @@
+#ifndef __GPU_NODE_H__
+#define __GPU_NODE_H__
+
+#define GPU_NODE_ARRAY_NUM_NODES 50000
+#define GPU_NODE_SIZE 32
+#define GPU_NODE_ARRAY_SIZE GPU_NODE_ARRAY_NUM_NODES*GPU_NODE_SIZE
+
+// 32 bytes - aligned on 8 byte boundary
+struct GPUNode {
+
+	bool isLeaf; // 1 
+
+	// If internal, ID of left and right children
+	uint32 leftIdx; // 4
+	uint32 rightIdx; // 4
+
+	// If active, this is the current node's working set
+	// If a leaf, this is the triangles permanent triangle list
+	uint32 primBaseIndex; // 4
+	uint32 primLength; // 4
+
+	// If internal, this is the split value
+	float splitValue; // 4
+
+	// 0 - x plane
+	// 1 - y plane
+	// 2 - z plane
+	uint32 splitChoice;  //4
+	
+	bool padding[7];
+};
+
+
+class GPUNodeArray
+{
+	public:
+		__device__ GPUNodeArray() {
+			capacity=GPU_NODE_ARRAY_SIZE;
+			nextAvailable=0;
+		}
+	
+		__device__ GPUNode * getNode(uint32 nodeIdx) {
+			return &nodes[nodeIdx];
+		}
+		
+		__device__ void putNode(GPUNode * node, uint32 nodeIx) {
+			cudaMemcpy(&node[nodeIdx],node,sizeof(node),cudaMemcpyDeviceToDevice);
+		}
+
+		__device__ GPUNode * allocateNode() {
+			GPUNode * node;
+			if(capacity==nextAvailable)
+			{
+				return NULL;
+			}
+			node = &nodes[nextAvailable];
+			nextAvailable++;
+		}
+
+	private:
+		uint32 capacity;
+		uint32 nextAvailable;
+		GPUNode nodes[GPU_NODE_ARRAY_SIZE];
+};
+
+
+#endif

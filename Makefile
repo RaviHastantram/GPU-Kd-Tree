@@ -24,7 +24,7 @@ CFLAGS =  -m32
 .cu.o:
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
 
-ALL.O = main.o kdtree.o geom.o util.o rply.o gpuBuilder.o
+ALL.O = main.o geom.o util.o rply.o gpuBuilder.o
 
 gpukd: $(ALL.O)
 	$(CC) $(CFLAGS) -o $@ $(ALL.O) $(INCLUDE) $(LIBDIR) $(LIBS)

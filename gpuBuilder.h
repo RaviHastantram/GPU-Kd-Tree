@@ -9,6 +9,7 @@
 using namespace std;
 //#include "file.h"
 
+#define MAX_BLOCK_SIZE 128
 
 typedef u_int64_t uint64_t;
 

@@ -4,12 +4,21 @@
 #include <cuda.h>
 #include "lock.h"
 
-#define GPU_NODE_ARRAY_NUM_NODES 50000
-#define GPU_NODE_SIZE 32
+#define SPLIT_X 0
+#define SPLIT_Y 1
+#define SPLIT_Z 2
+#define SPLIT_NONE 3
+#define MAX_DEPTH 10
+
+// 20 MB
+#define GPU_NODE_ARRAY_NUM_NODES 524288
+#define GPU_NODE_SIZE 40
 #define GPU_NODE_ARRAY_SIZE GPU_NODE_ARRAY_NUM_NODES*GPU_NODE_SIZE
 
-// 32 bytes - aligned on 8 byte boundary
+// 40 bytes - aligned on 8 byte boundary
 struct GPUNode {
+
+	uint32 nodeIdx; // 4
 
 	bool isLeaf; // 1 
 
@@ -28,8 +37,11 @@ struct GPUNode {
 	// 0 - x plane
 	// 1 - y plane
 	// 2 - z plane
+	// 3 - no split
 	uint32 splitChoice;  //4
 	
+	uint32 nodeDepth; // 4
+
 	bool padding[7];
 };
 
@@ -54,14 +66,14 @@ class GPUNodeArray
 
 			lock.lock();
 
-			GPUNode * node;
 			if(capacity==nextAvailable)
 			{
 				lock.unlock();
 				return NULL;
 			}
 
-			node = &nodes[nextAvailable];
+			GPUNode * node = &nodes[nextAvailable];
+			node->nodeIdx=nextAvailable;
 			nextAvailable++;
 
 			lock.unlock();

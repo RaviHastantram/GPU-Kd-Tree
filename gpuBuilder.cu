@@ -60,8 +60,15 @@ __device__ void computeCost()
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + d_activeOffset;
 	GPUNode * node = d_gpuNodes.getNode(nodeIdx);
+
+	if(node->nodeDepth>MAX_DEPTH)
+	{
+		node->splitChoice=SPLIT_NONE;
+		node->isLeaf=true;
+		return;
+	}
 	
-	uint32 * triangleIDs= gpuTriangleList.getList(node->primBaseIdx);
+	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
 
 	mins[threadIdx.x]=FLT_MAX;
 	maxs[threadIdx.x]=FLT_MIN;
@@ -113,22 +120,48 @@ __device__ void splitNodes()
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
 	__shared__ uint32 offR[MAX_BLOCK_SIZE];
+	__shared__ uint32 * leftList;
+	__shared__ uint32 * rightList;
+	__shared__ uint32 leftPrimBaseIdx;
+	__shared__ uint32 rightPrimBaseIdx;
+
+	uint32 triangleChoice;
+
 	uint32 nodeIdx = blockIdx.x + d_activeOffset;
 	GPUNode * node = d_gpuNodes.getNode(nodeIdx);
 	int dim = node->splitChoice;
 	float splitValue = node->splitValue;
-	
-	uint32 * triangleIDs= gpuTriangleList.getList(node->primBaseIdx);
-
 	uint32 currIdx = threadIdx.x;
+	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
+	uint32 leftBase=0, rightBase=0;
+	
+	if(node->isLeaf)
+	{
+		return;
+	}
+
+	if(threadIdx.x==0)
+	{
+		leftPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
+		rightPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
+		leftList=gpuTriangleList.getList(leftPrimBaseIdx);
+		rightList=gpuTriangleList.getList(rightPrimBaseIdx);
+	}
+	__syncthreads();
+
 	float low = FLT_MIN;
 	float high = FLT_MAX;
 	
 	//Need to initialize the offL, offD, offR arrays 
 	while(currIdx<node->primLength)
 	{
+		offL[threadIdx.x]=0;
+		offR[threadIdx.x]=0;
+		offD[threadIdx.x]=0;
+
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = d_triangles[triangleID];
+
 		for(uint32 j=0;j<3;j++)
 		{
 			uint32 pointID = triangle->ids[j];
@@ -142,13 +175,58 @@ __device__ void splitNodes()
 				high=point->values[dim];
 			}
 		}
-		if( low < splitValue && high < splitValue ) offL[currIdx] = 1;
-		if( low >= splitValue && high >= splitValue) offR[currIdx] = 1;
-		if( low < splitValue && hight >= splitValue ) offD[currIdx] = 1;
+
+		if( low < splitValue && high < splitValue )
+		{
+			offL[currIdx] = 1;
+			triangleChoice=0;
+		}
+
+		if( low >= splitValue && high >= splitValue) 
+		{
+			offR[currIdx] = 1;
+			triangleChoice=1;
+		}
+
+		if( low < splitValue && hight >= splitValue ) 
+		{
+			offD[currIdx] = 1;
+			triangleChoice=2;
+		}
+
 		__syncthreads();
+
+		if(threadIdx.x==0)
+		{
+			for(uint32 k=1;k<blockDim;k++)
+			{
+				offL[k] += offL[k-1];
+				offR[k] += offR[k-1];
+				offD[k] += offD[k-1];
+			}
+		}
+
+		__syncthreads();
+
+		if(triangleChoice==0)
+		{
+			leftList[leftBase+offL[threadIdx.x]-1]=triangleID;
+		}
+		else if(triangleChoice==1)
+		{
+			rightList[rightBase+offR[threadIdx.x]-1]=triangleID;
+		}
+		else if(triangleChoice==2)
+		{
+			leftList[leftBase+offL[blockDim-1]+offD[threadIdx.x]-1]=triangleID;
+			rightList[rightBase+offR[blockDim-1]+offD[threadIdx.x]-1]=triangleID;
+		}
+	
+		leftBase += offL[blockDim-1]+offD[blockDim-1];
+		rightBase += offR[blockDim-1]+offD[blockDim-1];
+
+		currIdx += blockDim;
 	}
-
-
 }
 
 ////////////////////////////////

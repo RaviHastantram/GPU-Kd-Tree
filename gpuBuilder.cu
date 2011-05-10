@@ -1,11 +1,9 @@
-#include "kdtree.h"
 #include "kdtypes.h"
-#include "lists.h"
 #include "gpuBuilder.h"
 #include <iostream>
 #include <fstream>
 #include <cstdio>
-#incluce <cfloat>
+#include <cfloat>
 
 using namespace std;
 
@@ -49,13 +47,13 @@ uint32 getActiveTriangles()
 	return numTriangles;
 }
 
-__device__ void computeCost(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
+__device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
 {
 	__shared__ float mins[MAX_BLOCK_SIZE];
 	__shared__ float maxs[MAX_BLOCK_SIZE];
 	
-	uint32 min=FLT_MAX;
-	uint32 max=FLT_MIN;
+	float min=FLT_MAX;
+	float max=FLT_MIN;
  
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + d_activeOffset;
@@ -78,11 +76,11 @@ __device__ void computeCost(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTria
 	while(currIdx<node->primLength)
 	{
 		uint32 triangleID =  triangleIDs[currIdx];
-		Triangle * triangle = d_triangles[triangleID];
+		Triangle * triangle = &d_triangles[triangleID];
 		for(uint32 j=0;j<3;j++)
 		{
 			uint32 pointID = triangle->ids[j];
-			Point * point = d_points[pointID];
+			Point * point = &d_points[pointID];
 			if(point->values[dim]<mins[threadIdx.x])
 			{
 				mins[threadIdx.x]=point->values[dim];
@@ -92,14 +90,14 @@ __device__ void computeCost(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTria
 				maxs[threadIdx.x]=point->values[dim];
 			}
 		}
-		currIdx += blockDim;
+		currIdx += blockDim.x;
 	}
 
 	__syncthreads();
 
 	if(threadIdx.x==0)
 	{
-		for(uint32 k=0;k<blockDim;k++)
+		for(uint32 k=0;k<blockDim.x;k++)
 		{
 			if(mins[k]<min)
 			{
@@ -115,7 +113,7 @@ __device__ void computeCost(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTria
 	}
 }
 
-__device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
+__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
 {
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
@@ -161,12 +159,12 @@ __device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 		offD[threadIdx.x]=0;
 
 		uint32 triangleID =  triangleIDs[currIdx];
-		Triangle * triangle = d_triangles[triangleID];
+		Triangle * triangle = &d_triangles[triangleID];
 
 		for(uint32 j=0;j<3;j++)
 		{
 			uint32 pointID = triangle->ids[j];
-			Point * point = d_points[pointID];
+			Point * point = &d_points[pointID];
 			if(point->values[dim]<low)
 			{
 				low=point->values[dim];
@@ -189,7 +187,7 @@ __device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 			triangleChoice=1;
 		}
 
-		if( low < splitValue && hight >= splitValue ) 
+		if( low < splitValue && high >= splitValue ) 
 		{
 			offD[currIdx] = 1;
 			triangleChoice=2;
@@ -199,14 +197,14 @@ __device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 
 		if(threadIdx.x==0)
 		{
-			for(uint32 k=1;k<blockDim;k++)
+			for(uint32 k=1;k<blockDim.x;k++)
 			{
 				offL[k] += offL[k-1];
 				offR[k] += offR[k-1];
 				offD[k] += offD[k-1];
 			}
-			leftCount += offL[blockDim-1]+offD[blockDim-1];
-			rightCount += offR[blockDim-1]+offD[blockDim-1];
+			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
+			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];
 		}
 
 		__syncthreads();
@@ -221,24 +219,24 @@ __device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 		}
 		else if(triangleChoice==2)
 		{
-			leftList[leftBase+offL[blockDim-1]+offD[threadIdx.x]-1]=triangleID;
-			rightList[rightBase+offR[blockDim-1]+offD[threadIdx.x]-1]=triangleID;
+			leftList[leftBase+offL[blockDim.x-1]+offD[threadIdx.x]-1]=triangleID;
+			rightList[rightBase+offR[blockDim.x-1]+offD[threadIdx.x]-1]=triangleID;
 		}
 	
-		leftBase += offL[blockDim-1]+offD[blockDim-1];
-		rightBase += offR[blockDim-1]+offD[blockDim-1];
+		leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
+		rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
 
-		currIdx += blockDim;
+		currIdx += blockDim.x;
 	}
 	
 	if(threadIdx.x==0)
 	{
-		d_gpuNodes.lock();
+		d_gpuNodes->lock();
 
-		leftNode =  d_gpuNodes.allocateNode();
-		rightNode = d_gpuNodes.allocateNode();
+		GPUNode* leftNode =  d_gpuNodes->allocateNode();
+		GPUNode* rightNode = d_gpuNodes->allocateNode();
 
-		d_gpuNodes.unlock();
+		d_gpuNodes->unlock();
 
 		node->leftIdx = leftNode->nodeIdx;
 		node->rightIdx = rightNode->nodeIdx;
@@ -247,8 +245,8 @@ __device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 		leftNode->primLength=leftCount;
 		leftNode->nodeDepth=node->nodeDepth+1;
 		
-		rightNode->primBaseIdx=rightPrimBaseIddx;
-		rightNode->primLength=rightPrimBaesIdx;
+		rightNode->primBaseIdx=rightPrimBaseIdx;
+		rightNode->primLength=rightCount;
 		rightNode->nodeDepth=node->nodeDepth+1;
 	}
 }

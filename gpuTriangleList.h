@@ -1,6 +1,7 @@
 #ifndef __GPU_TRIANGLE_LIST_H
-#ifdef __GPU_TRIANGLE_LIST_H
+#define __GPU_TRIANGLE_LIST_H
 
+#include "kdtypes.h"
 //20k triangles.
 #define GPU_TRIANGLE_ARRAY_SIZE 20000
 
@@ -17,12 +18,12 @@ public:
 		nextAvailable=0;
 	}
 
-	__device uint32* getList(uint32 primBaseIdx)
+	__device__ uint32* getList(uint32 primBaseIdx)
 	{
 		return &triangles[primBaseIdx];
 	}
 
-	__device uint32 allocateList(uint32 primLength)
+	__device__ uint32 allocateList(uint32 primLength)
 	{
 		uint32 t = nextAvailable;
 		nextAvailable += primLength;

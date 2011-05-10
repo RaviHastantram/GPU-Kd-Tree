@@ -11,7 +11,7 @@ INCLUDE = -I$(LOCAL)/include
 LIBDIR = -L$(LOCAL)/lib
 LIBS  =
 
-CFLAGS =  -m32 
+CFLAGS =  -m32 -arch sm_11
 
 .SUFFIXES: .o .cpp .cxx .cu
 
@@ -24,7 +24,7 @@ CFLAGS =  -m32
 .cu.o:
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
 
-ALL.O = main.o geom.o util.o rply.o gpuBuilder.o
+ALL.O = main.o geom.o util.o rply.o gpuBuilder.o gpuTriangleList.o gpuNode.o
 
 gpukd: $(ALL.O)
 	$(CC) $(CFLAGS) -o $@ $(ALL.O) $(INCLUDE) $(LIBDIR) $(LIBS)

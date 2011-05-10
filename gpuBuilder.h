@@ -5,7 +5,9 @@
 #include <cassert>
 #include <cstdio>
 #include <iostream>
-
+#include "gpuNode.h"
+#include "gpuTriangleList.h"
+#include "geom.h"
 using namespace std;
 //#include "file.h"
 
@@ -24,7 +26,7 @@ __device__ uint32 d_numActiveTriangles;
 //	d_activeOffset - offset to the first active node (all nodes before this are completed) 
 //
 /////
-__device__ GPUNodeArray d_gpuNodes;
+//__device__ GPUNodeArray d_gpuNodes;
 __device__ uint32 d_numActiveNodes=0;
 __device__ uint32 d_activeOffset=0;
 
@@ -32,8 +34,8 @@ __device__ uint32 d_activeOffset=0;
 ////////////////////
 // Tree Building
 ////////////////////
-__global__ void computeCost();
-__global__ void splitNodes();
+__global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
+__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
 
 uint32 getActiveNodes();
 uint32 getActiveTriangles();

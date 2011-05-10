@@ -113,7 +113,7 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 	}
 }
 
-__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
+__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * counts)
 {
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
@@ -133,6 +133,11 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 	uint32 * triangleIDs = gpuTriangleList->getList(node->primBaseIdx);
 	uint32 leftBase=0, rightBase=0;
 	uint32 leftCount=0, rightCount=0;
+
+	if(threadIdx.x==0)
+	{
+		counts[blockIdx.x]=0;
+	}
 	
 	if(node->isLeaf)
 	{
@@ -248,6 +253,8 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 		rightNode->primBaseIdx=rightPrimBaseIdx;
 		rightNode->primLength=rightCount;
 		rightNode->nodeDepth=node->nodeDepth+1;
+	
+		counts[blockIdx.x]=1;
 	}
 }
 

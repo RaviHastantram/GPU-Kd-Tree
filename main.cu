@@ -27,19 +27,30 @@ int main(int argc, char  ** argv)
 	int numActiveNodes=1;
 	int numActiveTriangles=m->numTriangles;
 	int threadsPerNode = 0;
+	uint32 activeOffset;
+
+	thrust::device_vector<int> d_countsVec(MAX_BLOCKS);
+	int * d_counts = thrust::raw_pointer_cast(&d_vec[0]);
+	int count=0;
 
 	while(numActiveNodes>0)
 	{
+		cudaMemcpy(&d_activeOffset,&activeOffset,sizeof(uint32),0,cudaMemcpyHostToDevice);
+
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
 		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray,d_triangleArray);
 
-		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray);
+		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray,d_counts);
 
 		cudaThreadSynchronize();
 		
 		numActiveNodes = getActiveNodes();
-		numActiveTriangles = getActiveTriangles();		
+		numActiveTriangles = getActiveTriangles();
+
+		cudaMemcpyFromSymbol(&activeOffset,&d_activeOffset,sizeof(uint32),0,cudaMemcpyDeviceToHost);
+		count=thrust::count(d_countsVec.begin(), d_countsVec.end() + numActiveNodes, 1);
+		activeOffset += 2*count;		
 	}
 
 	//copyToHost(kd);

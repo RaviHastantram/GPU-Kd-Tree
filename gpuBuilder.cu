@@ -82,16 +82,15 @@ void copyToGPU(Mesh *mesh)
 }
 
 
-// KERNEL
-__global__ void copyToHost(KDTree *kdtree)
+void copyToHost(KDTree *kdtree)
 {
 	//Allocate the Nodes array on the host
-	//int size = sizeof(Node)*(kdtree->numNodes);
+	int size = sizeof(Node)*(kdtree->numNodes);
 
 	// TODO - Fix this.  Cannot call malloc fromt the device.	
 	//	- But, still need some way to copy the tree back to host.
 		
-	/**
+	
 	Node *nodes = (Node*)malloc(size*sizeof(Node));
 		
 	//Copy the nodes array
@@ -99,20 +98,19 @@ __global__ void copyToHost(KDTree *kdtree)
 	{
 		 copyNode(kdtree,i,nodes); //Copy node "i" from kdtree to nodes array on the host
 	}
-	**/	
+	
 }
 
-// KERNEL
-__global__ void copyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
+
+void copyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
 {
 	// TODO - Fix this.   Not allowed to call host functions from device.
 
-	/**Node* node = kdtree->getNode(nodeID);
-	uint32 *triangles;
+	Node* node = kdtree->getNode(nodeID);
 	int size = 0;
 	if(ISLEAF(nodeID))
 	{
-		size = kdtree->size(node)
+		size = kdtree->size(node);
 	}
 	else
 	{
@@ -120,18 +118,17 @@ __global__ void copyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
 	}
 
 	assert(size != 0);
-	objectIDs = (uint32*)malloc(size);
+	uint32* objectIDs = (uint32*)malloc(size);
 	
 	//Copy the children to the host
 	cudaMemcpy(objectIDs,node->objectIDs,size,cudaMemcpyDeviceToHost);
 
 	//Copy the node to the host
 	size = sizeof(node);
-	cudaMemcpy(nodes[i],node,size,cudaMemcpyDeviceToHost);
+	cudaMemcpy(&nodes[nodeID],node,size,cudaMemcpyDeviceToHost);
 
 	//Replace the triangle list pointer with pointer in host.
-	nodes[i]->objectIDs = triangles;
-	**/
+	nodes[nodeID].objectIDs = objectIDs;
 }	
 
 void dumpKDTree(KDTree *kdtree)

@@ -1,6 +1,9 @@
 #ifndef __GPU_NODE_H__
 #define __GPU_NODE_H__
 
+#include <cuda.h>
+#include "lock.h"
+
 #define GPU_NODE_ARRAY_NUM_NODES 50000
 #define GPU_NODE_SIZE 32
 #define GPU_NODE_ARRAY_SIZE GPU_NODE_ARRAY_NUM_NODES*GPU_NODE_SIZE
@@ -16,7 +19,7 @@ struct GPUNode {
 
 	// If active, this is the current node's working set
 	// If a leaf, this is the triangles permanent triangle list
-	uint32 primBaseIndex; // 4
+	uint32 primBaseIdx; // 4
 	uint32 primLength; // 4
 
 	// If internal, this is the split value
@@ -48,16 +51,24 @@ class GPUNodeArray
 		}
 
 		__device__ GPUNode * allocateNode() {
+
+			lock.lock();
+
 			GPUNode * node;
 			if(capacity==nextAvailable)
 			{
+				lock.unlock();
 				return NULL;
 			}
+
 			node = &nodes[nextAvailable];
 			nextAvailable++;
+
+			lock.unlock();
 		}
 
 	private:
+		Lock lock;
 		uint32 capacity;
 		uint32 nextAvailable;
 		GPUNode nodes[GPU_NODE_ARRAY_SIZE];

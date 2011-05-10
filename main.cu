@@ -31,6 +31,8 @@ int main(int argc, char  ** argv)
 
 		splitNodes<<<numActiveNodes,threadsPerNode>>>();
 
+		cudaThreadSynchronize();
+		
 		numActiveNodes = getActiveNodes();
 		numActiveTriangles = getActiveTriangles();		
 	}

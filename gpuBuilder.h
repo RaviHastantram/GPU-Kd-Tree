@@ -1,5 +1,5 @@
 //#include "Mesh.h"
-#include "kdtree.h"
+#include "gpuNode.h"
 #include <sys/types.h>
 #include <cuda.h>
 #include <cassert>
@@ -12,12 +12,21 @@ using namespace std;
 
 typedef u_int64_t uint64_t;
 
-__device__ bool treeBuildInitialized=false;
 __device__ Point* d_points;
 __device__ Triangle* d_triangles;
 __device__ Mesh* d_mesh;
 __device__ uint32 d_numActiveTriangles;
-__device__ uint32 d_numActiveNodes;
+
+//////
+//
+//	d_numActiveNodes - number of current active nodes
+//	d_activeOffset - offset to the first active node (all nodes before this are completed) 
+//
+/////
+__device__ GPUNodeArray d_gpuNodes;
+__device__ uint32 d_numActiveNodes=0;
+__device__ uint32 d_activeOffset=0;
+
 
 ////////////////////
 // Tree Building
@@ -32,11 +41,6 @@ uint32 getThreadsPerNode(int,int);
 ////////////////////
 //  Data Import/Export
 ////////////////////
-void copyToHost(KDTree *kdtree);
-void copyNode(KDTree *kdtree,NodeID nodeID, Node* nodes);
-
 void copyToGPU(Mesh *mesh);
-void dumpKDTree(KDTree *kdtree);
-void dumpNode(ofstream& file,NodeID nodeID,KDTree *kdtree);
-void dumpTriangles(ofstream& file, NodeID nodeID, KDTree *kdtree);
+
 

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+#incluce <cfloat>
 
 using namespace std;
 
@@ -50,12 +51,65 @@ uint32 getActiveTriangles()
 
 __device__ void computeCost()
 {
+	__shared__ float mins[MAX_BLOCK_SIZE];
+	__shared__ float maxs[MAX_BLOCK_SIZE];
 	
+	uint32 min=FLT_MAX;
+	uint32 max=FLT_MIN;
+ 
+	uint32 dim = blockIdx.x % 3;
+	uint32 nodeIdx = blockIdx.x + d_activeOffset;
+	GPUNode * node = d_gpuNodes.getNode(nodeIdx);
+	
+	uint32 * triangleIDs= gpuTriangleList.getList(node->primBaseIdx);
+
+	mins[threadIdx.x]=FLT_MAX;
+	maxs[threadIdx.x]=FLT_MIN;
+
+	uint32 currIdx = threadIdx.x;
+
+	while(currIdx<node->primLength)
+	{
+		uint32 triangleID =  triangleIDs[currIdx];
+		Triangle * triangle = d_triangles[triangleID];
+		for(uint32 j=0;j<3;j++)
+		{
+			uint32 pointID = triangle->ids[j];
+			Point * point = d_points[pointID];
+			if(point->values[dim]<mins[threadIdx.x])
+			{
+				mins[threadIdx.x]=point->values[dim];
+			}
+			if(point->values[dim]>maxs[threadIdx.x])
+			{
+				maxs[threadIdx.x]=point->values[dim];
+			}
+		}
+		currIdx += blockDim;
+	}
+
+	__syncthreads();
+
+	if(threadIdx.x==0)
+	{
+		for(uint32 k=0;k<blockDim;k++)
+		{
+			if(mins[k]<min)
+			{
+				min=mins[k];
+			}
+			if(maxs[k]>max)
+			{
+				max=maxs[k];
+			}
+		}
+		node->splitValue = 0.5*(min+max);
+		node->splitChoice = dim;
+	}
 }
 
 __device__ void splitNodes()
 {
-
 }
 
 ////////////////////////////////
@@ -82,130 +136,5 @@ void copyToGPU(Mesh *mesh)
 }
 
 
-void copyToHost(KDTree *kdtree)
-{
-	//Allocate the Nodes array on the host
-	int size = sizeof(Node)*(kdtree->numNodes);
 
-	// TODO - Fix this.  Cannot call malloc fromt the device.	
-	//	- But, still need some way to copy the tree back to host.
-		
-	
-	Node *nodes = (Node*)malloc(size*sizeof(Node));
-		
-	//Copy the nodes array
-	for(int i =0 ; i < kdtree->numNodes; i++)
-	{
-		 copyNode(kdtree,i,nodes); //Copy node "i" from kdtree to nodes array on the host
-	}
-	
-}
-
-
-void copyNode(KDTree *kdtree,NodeID nodeID, Node* nodes)
-{
-	// TODO - Fix this.   Not allowed to call host functions from device.
-
-	Node* node = kdtree->getNode(nodeID);
-	int size = 0;
-	if(ISLEAF(nodeID))
-	{
-		size = kdtree->size(node);
-	}
-	else
-	{
-		size = 2;
-	}
-
-	assert(size != 0);
-	uint32* objectIDs = (uint32*)malloc(size);
-	
-	//Copy the children to the host
-	cudaMemcpy(objectIDs,node->objectIDs,size,cudaMemcpyDeviceToHost);
-
-	//Copy the node to the host
-	size = sizeof(node);
-	cudaMemcpy(&nodes[nodeID],node,size,cudaMemcpyDeviceToHost);
-
-	//Replace the triangle list pointer with pointer in host.
-	nodes[nodeID].objectIDs = objectIDs;
-}	
-
-void dumpKDTree(KDTree *kdtree)
-{
-	ofstream file("GPU-Kd-tree",ios::out | ios::binary);
-
-	char *buffer = new char[100];
-	
-	unsigned int version = 1;
-	//1. Write the LAYOUT_VERSION.
-	file.write((char*)&version,sizeof(unsigned int));
-
-	//2.TODO Write the Bounds
-	
-	//3. Write the number of nodes.
-	uint64_t numNodes = kdtree->numNodes;
-	file.write((char*)&numNodes,sizeof(uint64_t));
-
-	//4. Write the nodes.
-	for(int i = 0; i < kdtree->numNodes; i++)
-	{
-		dumpNode(file,i,kdtree);		
-	}
-
-	//5.Write the number of leaves
-	uint64_t leafcount = (uint64_t)kdtree->leafCount;
-	file.write((char*)&leafcount,sizeof(uint64_t));
-
-	//6. Write the triangles
-	for(int i = 0; i < kdtree->numNodes; i++)
-	{
-		if(ISLEAF(i))
-		{	
-			dumpTriangles(file,i,kdtree);
-		}
-	}
-
-	file.close();
-}
-
-void dumpNode(ofstream& file,NodeID nodeID,KDTree *kdtree)
-{
-	Node* node = kdtree->getNode(nodeID);
-	uint32 data0 = 0;
-	uint32 data1 = 0; 
-	if(ISLEAF(nodeID))
-	{
-		data1 = nodeID;
-		file.write((char*)&data0, sizeof(uint32));
-		file.write((char*)&data1, sizeof(uint32));
-	}
-	else
-	{
-		data0 = GETINDEX(nodeID) << 2;
-		data0 |= GETSPLITDIM(nodeID);
-		
-		file.write((char*)&data0, sizeof(uint32));
-		file.write((char*)&node->v.split, sizeof(float));
-	}
-	
-}
-
-void dumpTriangles(ofstream& file, NodeID nodeID, KDTree *kdtree)
-{
-	Node* node = kdtree->getNode(nodeID);
-	//7. Write the length of the triangle list
-	uint64_t numTriangles = node->v.size;
-	file.write((char*)&numTriangles,sizeof(uint64_t));
-
-	//8. Write the triangles
-	uint32 triangleID = 0;
-	uint32 triangleIndex = 0; //index of the triangle in the PLY file
-	for(int i = 0; i < node->v.size; i++)
-	{
-		triangleID = GETINDEX(node->objectIDs[i]);
-		triangleIndex = kdtree->mesh->triangles[triangleID].index;
-		file.write((char*)&triangleIndex,sizeof(triangleIndex));
-	}
-}
 

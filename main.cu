@@ -6,8 +6,11 @@
 #include "kdtree.h"
 #include "gpuBuilder.h"
 #include "util.h"
+#include "gpuTrinagleList.h"
+#include "gpuNode.h"
 
 using namespace std;
+
 
 int main(int argc, char  ** argv)
 {
@@ -18,6 +21,9 @@ int main(int argc, char  ** argv)
 	//printMesh(m);
 	
 	copyToGPU(m);
+	
+	GPUTriangleArray *d_triangleArray = new GPUTriangleArray();
+	GPUNodesArray *d_nodeArray = new GPUNodeArray();
 
 	int numActiveNodes=1;
 	int numActiveTriangles=m->numTriangles;
@@ -27,9 +33,9 @@ int main(int argc, char  ** argv)
 	{
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
-		computeCost <<< numActiveNodes,threadsPerNode >>>();
+		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray,d_triangleArray);
 
-		splitNodes<<<numActiveNodes,threadsPerNode>>>();
+		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray);
 
 		cudaThreadSynchronize();
 		

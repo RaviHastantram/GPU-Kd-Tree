@@ -49,19 +49,21 @@ struct GPUNode {
 class GPUNodeArray
 {
 	public:
-		__device__ GPUNodeArray() {
+		__host__ GPUNodeArray() {
 			capacity=GPU_NODE_ARRAY_SIZE;
 			nextAvailable=0;
+			cudaMalloc(&nodes,GPU_NODE_ARRAY_SIZE);
 		}
 	
 		__device__ GPUNode * getNode(uint32 nodeIdx) {
 			return &nodes[nodeIdx];
 		}
-		
+			
+		/*
 		__device__ void putNode(GPUNode * node, uint32 nodeIx) {
 			cudaMemcpy(&node[nodeIdx],node,sizeof(node),cudaMemcpyDeviceToDevice);
 		}
-
+		*/
 		__device__ GPUNode * allocateNode() {
 			if(capacity==nextAvailable)
 			{
@@ -72,6 +74,7 @@ class GPUNodeArray
 			GPUNode * node = &nodes[nextAvailable];
 			node->nodeIdx=nextAvailable;
 			nextAvailable++;
+			return node;
 		}
 	
 		__device__ void lock()
@@ -88,7 +91,7 @@ class GPUNodeArray
 		Lock lock;
 		uint32 capacity;
 		uint32 nextAvailable;
-		GPUNode nodes[GPU_NODE_ARRAY_SIZE];
+		GPUNode *nodes;
 };
 
 

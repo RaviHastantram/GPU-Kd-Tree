@@ -49,7 +49,7 @@ uint32 getActiveTriangles()
 	return numTriangles;
 }
 
-__device__ void computeCost()
+__device__ void computeCost(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
 {
 	__shared__ float mins[MAX_BLOCK_SIZE];
 	__shared__ float maxs[MAX_BLOCK_SIZE];
@@ -59,7 +59,7 @@ __device__ void computeCost()
  
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + d_activeOffset;
-	GPUNode * node = d_gpuNodes.getNode(nodeIdx);
+	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
 
 	if(node->nodeDepth>MAX_DEPTH)
 	{
@@ -68,7 +68,7 @@ __device__ void computeCost()
 		return;
 	}
 	
-	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
+	uint32 * triangleIDs = gpuTriangleList->getList(node->primBaseIdx);
 
 	mins[threadIdx.x]=FLT_MAX;
 	maxs[threadIdx.x]=FLT_MIN;
@@ -115,7 +115,7 @@ __device__ void computeCost()
 	}
 }
 
-__device__ void splitNodes()
+__device__ void splitNodes(GPUNodesArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
 {
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
@@ -128,11 +128,11 @@ __device__ void splitNodes()
 	uint32 triangleChoice;
 
 	uint32 nodeIdx = blockIdx.x + d_activeOffset;
-	GPUNode * node = d_gpuNodes.getNode(nodeIdx);
+	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
 	int dim = node->splitChoice;
 	float splitValue = node->splitValue;
 	uint32 currIdx = threadIdx.x;
-	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
+	uint32 * triangleIDs = gpuTriangleList->getList(node->primBaseIdx);
 	uint32 leftBase=0, rightBase=0;
 	uint32 leftCount=0, rightCount=0;
 	
@@ -143,10 +143,10 @@ __device__ void splitNodes()
 
 	if(threadIdx.x==0)
 	{
-		leftPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
-		rightPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
-		leftList=gpuTriangleList.getList(leftPrimBaseIdx);
-		rightList=gpuTriangleList.getList(rightPrimBaseIdx);
+		leftPrimBaseIdx=gpuTriangleList->allocateList(node->primLength);
+		rightPrimBaseIdx=gpuTriangleList->allocateList(node->primLength);
+		leftList=gpuTriangleList->getList(leftPrimBaseIdx);
+		rightList=gpuTriangleList->getList(rightPrimBaseIdx);
 	}
 	__syncthreads();
 

@@ -110,6 +110,45 @@ __device__ void computeCost()
 
 __device__ void splitNodes()
 {
+	__shared__ uint32 offL[MAX_BLOCK_SIZE];
+	__shared__ uint32 offD[MAX_BLOCK_SIZE];
+	__shared__ uint32 offR[MAX_BLOCK_SIZE];
+	uint32 nodeIdx = blockIdx.x + d_activeOffset;
+	GPUNode * node = d_gpuNodes.getNode(nodeIdx);
+	int dim = node->splitChoice;
+	float splitValue = node->splitValue;
+	
+	uint32 * triangleIDs= gpuTriangleList.getList(node->primBaseIdx);
+
+	uint32 currIdx = threadIdx.x;
+	float low = FLT_MIN;
+	float high = FLT_MAX;
+	
+	//Need to initialize the offL, offD, offR arrays 
+	while(currIdx<node->primLength)
+	{
+		uint32 triangleID =  triangleIDs[currIdx];
+		Triangle * triangle = d_triangles[triangleID];
+		for(uint32 j=0;j<3;j++)
+		{
+			uint32 pointID = triangle->ids[j];
+			Point * point = d_points[pointID];
+			if(point->values[dim]<low)
+			{
+				low=point->values[dim];
+			}
+			if(point->values[dim]>high)
+			{
+				high=point->values[dim];
+			}
+		}
+		if( low < splitValue && high < splitValue ) offL[currIdx] = 1;
+		if( low >= splitValue && high >= splitValue) offR[currIdx] = 1;
+		if( low < splitValue && hight >= splitValue ) offD[currIdx] = 1;
+		__syncthreads();
+	}
+
+
 }
 
 ////////////////////////////////

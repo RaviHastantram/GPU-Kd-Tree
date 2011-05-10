@@ -63,9 +63,6 @@ class GPUNodeArray
 		}
 
 		__device__ GPUNode * allocateNode() {
-
-			lock.lock();
-
 			if(capacity==nextAvailable)
 			{
 				lock.unlock();
@@ -75,7 +72,15 @@ class GPUNodeArray
 			GPUNode * node = &nodes[nextAvailable];
 			node->nodeIdx=nextAvailable;
 			nextAvailable++;
-
+		}
+	
+		__device__ void lock()
+		{
+			lock.lock();
+		}
+		
+		__device__ void unlock()
+		{
 			lock.unlock();
 		}
 

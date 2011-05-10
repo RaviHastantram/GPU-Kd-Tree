@@ -134,6 +134,7 @@ __device__ void splitNodes()
 	uint32 currIdx = threadIdx.x;
 	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
 	uint32 leftBase=0, rightBase=0;
+	uint32 leftCount=0, rightCount=0;
 	
 	if(node->isLeaf)
 	{
@@ -204,6 +205,8 @@ __device__ void splitNodes()
 				offR[k] += offR[k-1];
 				offD[k] += offD[k-1];
 			}
+			leftCount += offL[blockDim-1]+offD[blockDim-1];
+			rightCount += offR[blockDim-1]+offD[blockDim-1];
 		}
 
 		__syncthreads();
@@ -226,6 +229,27 @@ __device__ void splitNodes()
 		rightBase += offR[blockDim-1]+offD[blockDim-1];
 
 		currIdx += blockDim;
+	}
+	
+	if(threadIdx.x==0)
+	{
+		d_gpuNodes.lock();
+
+		leftNode =  d_gpuNodes.allocateNode();
+		rightNode = d_gpuNodes.allocateNode();
+
+		d_gpuNodes.unlock();
+
+		node->leftIdx = leftNode->nodeIdx;
+		node->rightIdx = rightNode->nodeIdx;
+
+		leftNode->primBaseIdx=leftPrimBaseIdx;
+		leftNode->primLength=leftCount;
+		leftNode->nodeDepth=node->nodeDepth+1;
+		
+		rightNode->primBaseIdx=rightPrimBaseIddx;
+		rightNode->primLength=rightPrimBaesIdx;
+		rightNode->nodeDepth=node->nodeDepth+1;
 	}
 }
 

@@ -70,7 +70,6 @@ class GPUNodeArray
 		__device__ GPUNode * allocateNode() {
 			if(capacity==nextAvailable)
 			{
-				l.unlock();
 				return NULL;
 			}
 
@@ -89,6 +88,8 @@ class GPUNodeArray
 		{
 			l.unlock();
 		}
+
+		__host__ GPUNode * getNodes() { return nodes; }
 
 	private:
 		Lock l;

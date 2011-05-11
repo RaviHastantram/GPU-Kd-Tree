@@ -26,7 +26,7 @@ public:
 	__host__ void copyList(uint32 * h_list, uint32 primBaseIdx, uint32 primLength)
 	{
 		uint32 * d_list = triangles+primBaseIdx;
-		cudaMemcpy(h_list, d_list, primLength*sizeof(uint32),cudaDeviceToHost);
+		cudaMemcpy(h_list, d_list, primLength*sizeof(uint32),cudaMemcpyDeviceToHost);
 	}
 
 	__device__ uint32 allocateList(uint32 primLength)

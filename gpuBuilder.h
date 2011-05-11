@@ -46,5 +46,8 @@ uint32 getThreadsPerNode(int,int);
 ////////////////////
 void copyToGPU(Mesh *mesh);
 void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_nodeList, GPUNode * d_numNodes, uint32 numNodes);
+void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds);
+void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes);
+void dumpTriangles(ofstream& file, uint32 nodeID,GPUNode* nodes);
 
 

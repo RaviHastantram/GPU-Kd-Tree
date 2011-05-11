@@ -76,7 +76,7 @@ int main(int argc, char  ** argv)
 	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];
 
 	// copy out triangles out
-	copyToHost(d_triangleArray, h_gpuNodes, d_gpuNodes, numTotalNodes);
+	copyToHost(d_triangleArray, h_gpuNodes, d_nodeArray->getNodes(), numTotalNodes);
 	
 	// copy triangles to disk
 	

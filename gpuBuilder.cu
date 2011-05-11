@@ -4,11 +4,9 @@
 #include <fstream>
 #include <cstdio>
 #include <cfloat>
+#include "geom.h"
 
 using namespace std;
-
-extern Point minBounds;
-extern Point maxBounds;
 
 ///////////////////////////
 // 
@@ -272,7 +270,7 @@ void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, GPU
 	}
 }
 
-void dumpKDTree(GPUNodes * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds)
+void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds)
 {
 	ofstream file("GPU-Kd-tree",ios::out | ios::binary);
 
@@ -292,8 +290,8 @@ void dumpKDTree(GPUNodes * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox
 	
 	
 	//3. Write the number of nodes.
-	uint64_t numNodes = (uint64_t)numNodes;
-	file.write((char*)&numNodes,sizeof(uint64_t));
+	uint64_t n = (uint64_t)numNodes;
+	file.write((char*)&n,sizeof(uint64_t));
 
 	//4. Write the nodes.
 	for(int i = 0; i < numNodes; i++)
@@ -309,7 +307,7 @@ void dumpKDTree(GPUNodes * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox
 	//6. Write the triangles
 	for(int i = 0; i < numNodes; i++)
 	{
-		if(nodes[i]->isLeaf)
+		if(nodes[i].isLeaf)
 		{	
 			dumpTriangles(file,i,nodes);
 		}
@@ -318,6 +316,46 @@ void dumpKDTree(GPUNodes * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox
 	file.close();
 }
 
+
+void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes)
+{
+	GPUNode* node = &nodes[nodeID];
+	uint32 data0 = 0;
+	float data1 = 0; 
+	if(node->isLeaf)
+	{
+		data1 = nodeID;
+		file.write((char*)&data0, sizeof(uint32));
+		file.write((char*)&data1, sizeof(uint32));
+	}
+	else
+	{
+		data0 |= node->leftIdx;
+		data0 <<= 2;
+		data0 |= node->splitChoice;
+		
+		data1 = node->splitValue;
+		
+		file.write((char*)&data0, sizeof(uint32));
+		file.write((char*)&data1, sizeof(float));
+	}
+}
+
+void dumpTriangles(ofstream& file, uint32 nodeID, GPUNode* nodes)
+{
+	GPUNode* node = &nodes[nodeID];
+	//7. Write the length of the triangle list
+	uint64_t numTriangles = node->primLength;
+	file.write((char*)&numTriangles,sizeof(uint64_t));
+
+	//8. Write the triangles
+	uint32 triangleIndex = 0; //index of the triangle in the PLY file
+	for(int i = 0; i < numTriangles; i++)
+	{
+		triangleIndex = node->hostTriangles[nodeID];
+		file.write((char*)&triangleIndex,sizeof(triangleIndex));
+	}
+}
 
 
 

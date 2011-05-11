@@ -1,10 +1,12 @@
 #ifndef __GPU_TRIANGLE_LIST_H
 #define __GPU_TRIANGLE_LIST_H
-
 #include "kdtypes.h"
 #include "lock.h"
+
 //20k triangles.
 #define GPU_TRIANGLE_ARRAY_SIZE 20000
+
+
 
 struct GPUTriangleArray {
 
@@ -17,6 +19,15 @@ public:
 
 		capacity=GPU_TRIANGLE_ARRAY_SIZE;
 		nextAvailable=0;
+	}
+
+	__host__ uint32 pushList(uint32 * h_triangles, uint32 length)
+	{
+		uint32 primBase = nextAvailable;
+		uint32 * d_base = triangles+primBase;
+		cudaMemcpy(d_base,h_triangles,sizeof(uint32)*length,cudaMemcpyHostToDevice);
+		nextAvialable+=length;
+		return primBase;
 	}
 
 	__device__ uint32* getList(uint32 primBaseIdx)

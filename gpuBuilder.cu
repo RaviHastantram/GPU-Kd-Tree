@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstdio>
 #include <cfloat>
+#include <cassert>
 #include "geom.h"
 
 using namespace std;
@@ -19,19 +20,25 @@ uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
 	return 32;
 }
 
-__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, Mesh * m)
+__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleArray *d_triangleArray, Mesh * m)
 {
 	GPUNode h_node;
 	h_node.nodeIdx=0;
 	h_node.isLeaf=false;
-	h_node.primBaseIdx=0;
-	h_node.primLength=m->numTriangles;
+
 	h_node.hostTriangles=new uint32[m->numTriangles];
 	for(int i=0;i<m->numTriangles;i++)
 	{
 		h_node.hostTriangles[i]=i;
 	}
+
+	h_node.primBaseIdx=d_triangleArray->pushList(&h_node.hostTriangles,m->numTriangles);
+	assert(h_node.primBaseIdx==0);
+
+	h_node.primLength=m->numTriangles;
+
 	h_node.nodeDepth=0;
+
 	d_gpuNodes->pushNode(&h_node);
 }
 

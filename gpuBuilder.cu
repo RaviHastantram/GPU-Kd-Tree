@@ -352,7 +352,7 @@ void dumpTriangles(ofstream& file, uint32 nodeID, GPUNode* nodes)
 	uint32 triangleIndex = 0; //index of the triangle in the PLY file
 	for(int i = 0; i < numTriangles; i++)
 	{
-		triangleIndex = node->hostTriangles[nodeID];
+		triangleIndex = node->hostTriangles[i];
 		file.write((char*)&triangleIndex,sizeof(triangleIndex));
 	}
 }

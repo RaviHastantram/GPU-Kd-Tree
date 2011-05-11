@@ -7,6 +7,9 @@
 
 using namespace std;
 
+extern Point minBounds;
+extern Point maxBounds;
+
 ///////////////////////////
 // 
 // Tree Building
@@ -268,6 +271,53 @@ void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, GPU
 		}
 	}
 }
+
+void dumpKDTree(GPUNodes * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds)
+{
+	ofstream file("GPU-Kd-tree",ios::out | ios::binary);
+
+	char *buffer = new char[100];
+	
+	unsigned int version = 1;
+
+	//1. Write the LAYOUT_VERSION.
+	file.write((char*)&version,sizeof(unsigned int));
+
+	//2. Write the Bounds
+	float zero=0;
+	file.write((char*)&zero,sizeof(float));
+	file.write((char*)&bounds.min,sizeof(float)*3);
+	file.write((char*)&zero,sizeof(float));
+	file.write((char*)&bounds.max,sizeof(float)*3);
+	
+	
+	//3. Write the number of nodes.
+	uint64_t numNodes = (uint64_t)numNodes;
+	file.write((char*)&numNodes,sizeof(uint64_t));
+
+	//4. Write the nodes.
+	for(int i = 0; i < numNodes; i++)
+	{
+		dumpNode(file,i,nodes);		
+	}
+
+	//5.Write the number of leaves
+	
+	uint64_t leafCount = (uint64_t)numLeaves;
+	file.write((char*)&leafCount,sizeof(uint64_t));
+
+	//6. Write the triangles
+	for(int i = 0; i < numNodes; i++)
+	{
+		if(nodes[i]->isLeaf)
+		{	
+			dumpTriangles(file,i,nodes);
+		}
+	}
+
+	file.close();
+}
+
 
 
 

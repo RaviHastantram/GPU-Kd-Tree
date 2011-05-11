@@ -1,6 +1,7 @@
 #include "kdtypes.h"
 #include "util.h"
 #include "geom.h"
+#include <cfloat>
 
 using namespace std;
 
@@ -20,18 +21,28 @@ static int vertex_cb(p_ply_argument argument)
     Point * pCurrPoint = &pCurrMesh->points[currPointIndex];
 
     pCurrPoint->values[currDimIndex] = ply_get_argument_value(argument);
+    float value = pCurrPoint->values[currDimIndex];
+
+    if(value<pCurrMesh->bounds.min[currDimIndex])
+    {
+	pCurrMesh->bounds.min[currDimIndex]=value;
+    }
+    if(value>pCurrMesh->bounds.max[currDimIndex])
+    {
+	pCurrMesh->bounds.max[currDimIndex]=value;
+    }
 
     if (eol) 
-	{
+    {
 	        currDimIndex=0;
 		currPointIndex++;
 //		printf("\n");
-	}
+    }
     else
-	{
+    {
 		currDimIndex++;
 //		printf(" ");
-	}
+    }
 	
     return 1;
 }
@@ -96,13 +107,13 @@ Mesh * loadMeshFromPLY(const char * filename)
     p_ply ply = ply_open(filename, NULL);
 	
     if (!ply) 
-	{
+    {
 		return NULL;
-	}
+    }
     if (!ply_read_header(ply)) 
-	{
+    {
 		return NULL;
-	}
+    }
 	
     pCurrMesh = new Mesh;
 

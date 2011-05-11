@@ -16,6 +16,7 @@ struct BoundingBox {
 };
 
 struct Mesh {
+	BoundingBox bounds;
 	uint32 numTriangles; // number of triangles
 	uint32 numPoints;
 	Triangle * triangles;	// list of triangles

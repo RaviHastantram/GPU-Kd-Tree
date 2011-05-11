@@ -40,7 +40,7 @@ int main(int argc, char  ** argv)
 	uint32 numLeaves=0;
 
 	// initialize the node list
-	initializeActiveNodeList(d_nodeArray,m);
+	initializeActiveNodeList(d_nodeArray,d_triangleArray,m);
 
 	while(numActiveNodes>0)
 	{

@@ -26,7 +26,7 @@ public:
 		uint32 primBase = nextAvailable;
 		uint32 * d_base = triangles+primBase;
 		cudaMemcpy(d_base,h_triangles,sizeof(uint32)*length,cudaMemcpyHostToDevice);
-		nextAvialable+=length;
+		nextAvailable+=length;
 		return primBase;
 	}
 

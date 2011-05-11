@@ -93,7 +93,7 @@ class GPUNodeArray
 
 		__host__ void pushNode(GPUNode * h_node)
 		{
-			uint32 * d_next = nodes+nextAvailable;
+			GPUNode * d_next = nodes+nextAvailable;
 			cudaMemcpy(d_next,h_node,sizeof(GPUNode),cudaMemcpyHostToDevice);
 			nextAvailable++;
 		}

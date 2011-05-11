@@ -36,7 +36,7 @@ __device__ uint32 d_numTotalNodes=0;
 ////////////////////
 // Tree Building
 ////////////////////
-__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, Mesh * m);
+__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes,  GPUTriangleArray *d_triangleArray, Mesh * m);
 __global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
 __global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * nodeCounts, int * triangleCounts);
 

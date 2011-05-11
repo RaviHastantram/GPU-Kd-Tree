@@ -32,7 +32,7 @@ __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, Mesh * m)
 		h_node.hostTriangles[i]=i;
 	}
 	h_node.nodeDepth=0;
-	cudaMemcpy(d_gpuNodes,&h_node,sizeof(GPUNode),cudaMemcpyHostToDevice);
+	d_gpuNodes->pushNode(&h_node);
 }
 
 __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)

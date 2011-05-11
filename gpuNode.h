@@ -91,6 +91,12 @@ class GPUNodeArray
 
 		__host__ GPUNode * getNodes() { return nodes; }
 
+		__host__ void pushNode(GPUNode * node)
+		{
+			cudaMemcpy(&nodes[nextAvailable],node,sizeof(GPUNode),cudaMemcpyHostToDevice);
+			nextAvailable++;
+		}
+
 	private:
 		Lock l;
 		uint32 capacity;

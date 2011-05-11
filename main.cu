@@ -38,6 +38,8 @@ int main(int argc, char  ** argv)
 	int nodeCount=0;
 	int triangleCount=0;
 
+	int numTotalNodes=1;
+
 	while(numActiveNodes>0)
 	{
 		// copy offset to first active node to device
@@ -61,7 +63,8 @@ int main(int argc, char  ** argv)
 
 		// calculate number of active nodes in next round
 		nodeCount=thrust::count(d_nodeCountsVec.begin(), d_nodeCountsVec.end() + numActiveNodes, 1);
-		numActiveNodes=2*nodeCount;		
+		numActiveNodes=2*nodeCount;
+		numTotalNodes += numActiveNodes;		
 	
 		// calculate number of triangles in next round
 		triangleCount=thrust::reduce(d_triangleCountsVec.begin(),
@@ -69,6 +72,9 @@ int main(int argc, char  ** argv)
 					 (int) 0, thrust::plus<int>());
 		numActiveTriangles=triangleCount;		
 	}
+
+	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];
+	copyToHost(d_triangleArray, h_gpuNodes, d_gpuNodes, numTotalNodes);
 
 	//copyToHost(kd);
 

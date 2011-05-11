@@ -12,10 +12,10 @@
 
 // 20 MB
 #define GPU_NODE_ARRAY_NUM_NODES 524288
-#define GPU_NODE_SIZE 40
+#define GPU_NODE_SIZE 48
 #define GPU_NODE_ARRAY_SIZE GPU_NODE_ARRAY_NUM_NODES*GPU_NODE_SIZE
 
-// 40 bytes - aligned on 8 byte boundary
+// 48 bytes - aligned on 8 byte boundary
 struct GPUNode {
 
 	uint32 nodeIdx; // 4
@@ -30,6 +30,9 @@ struct GPUNode {
 	// If a leaf, this is the triangles permanent triangle list
 	uint32 primBaseIdx; // 4
 	uint32 primLength; // 4
+
+	// used for copying leaf node triangle list of ids to host side
+	uint32 * hostTriangles; // 8
 
 	// If internal, this is the split value
 	float splitValue; // 4

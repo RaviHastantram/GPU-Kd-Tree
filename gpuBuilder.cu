@@ -254,6 +254,20 @@ void copyToGPU(Mesh *mesh)
 	cudaMemcpy(d_mesh,mesh,size,cudaMemcpyHostToDevice);
 }
 
+void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, GPUNode * d_gpuNodes, uint32 numNodes)
+{
+	// copy the nodes
+	cudaMemcpy(h_gpuNodes,d_gpuNodes,sizeof(GPUNode)*numNodes,cudaMemcpyDeviceToHost);
+	for(int i=0;i<numNodes;i++)
+	{
+		GPUNode * node = &h_gpuNodes[i];
+		if(node->isLeaf)
+		{
+			node->hostTriangles = new uint32[node->primLength];
+			d_gpuTriangleArray->copyList(node->hostTriangles, node->primBaseIdx, node->primLength);
+		}
+	}
+}
 
 
 

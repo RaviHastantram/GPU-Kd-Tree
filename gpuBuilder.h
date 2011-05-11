@@ -30,6 +30,7 @@ __device__ uint32 d_numActiveTriangles;
 //__device__ GPUNodeArray d_gpuNodes;
 __device__ uint32 d_numActiveNodes=0;
 __device__ uint32 d_activeOffset=0;
+__device__ uint32 d_numTotalNodes=0;
 
 
 ////////////////////
@@ -44,5 +45,6 @@ uint32 getThreadsPerNode(int,int);
 //  Data Import/Export
 ////////////////////
 void copyToGPU(Mesh *mesh);
+void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_nodeList, GPUNode * d_numNodes, uint32 numNodes);
 
 

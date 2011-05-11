@@ -12,15 +12,14 @@
 
 using namespace std;
 
-
 int main(int argc, char  ** argv)
 {
 	char * inputFile = argv[1];
+
 	// load ply
 	Mesh * m = loadMeshFromPLY(inputFile);
-	//KDTree * kd = new KDTree;
-	//printMesh(m);
 	
+	// copy to device
 	copyToGPU(m);
 	
 	GPUTriangleArray *d_triangleArray = new GPUTriangleArray();
@@ -37,8 +36,11 @@ int main(int argc, char  ** argv)
 	int * d_triangleCounts = thrust::raw_pointer_cast(&d_triangleCountsVec[0]);
 	int nodeCount=0;
 	int triangleCount=0;
-
 	int numTotalNodes=1;
+	uint32 numLeaves=0;
+
+	// initialize the node list
+	initializeActiveNodeList(d_nodeArray,m);
 
 	while(numActiveNodes>0)
 	{
@@ -73,20 +75,14 @@ int main(int argc, char  ** argv)
 		numActiveTriangles=triangleCount;		
 	}
 
+	// allocate host storage for nodes
 	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];
 
 	// copy out triangles out
-	copyToHost(d_triangleArray, h_gpuNodes, d_nodeArray->getNodes(), numTotalNodes);
+	copyToHost(d_triangleArray, h_gpuNodes, &numLeaves, d_nodeArray->getNodes(), numTotalNodes);
 	
 	// copy triangles to disk
-	
-	
-	//copyToHost(kd);
-
-	//kd->verifyTree();
-	//kd->printTreeStats();
-
-	//dumpKDTree(kd);
-	
+	dumpKDTree(h_gpuNodes, numTotalNodes, numLeaves,  m->bounds);
+		
 	return 0;
 }

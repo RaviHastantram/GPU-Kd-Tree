@@ -19,6 +19,22 @@ uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
 	return 32;
 }
 
+__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, Mesh * m)
+{
+	GPUNode h_node;
+	h_node.nodeIdx=0;
+	h_node.isLeaf=false;
+	h_node.primBaseIdx=0;
+	h_node.primLength=m->numTriangles;
+	h_node.hostTriangles=new uint32[m->numTriangles];
+	for(int i=0;i<m->numTriangles;i++)
+	{
+		h_node.hostTriangles[i]=i;
+	}
+	h_node.nodeDepth=0;
+	cudaMemcpy(d_gpuNodes,&h_node,sizeof(GPUNode),cudaMemcpyHostToDevice);
+}
+
 __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
 {
 	__shared__ float mins[MAX_BLOCK_SIZE];
@@ -255,7 +271,7 @@ void copyToGPU(Mesh *mesh)
 	cudaMemcpy(d_mesh,mesh,size,cudaMemcpyHostToDevice);
 }
 
-void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, GPUNode * d_gpuNodes, uint32 numNodes)
+void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, uint32 * h_numLeaves, GPUNode * d_gpuNodes, uint32 numNodes)
 {
 	// copy the nodes
 	cudaMemcpy(h_gpuNodes,d_gpuNodes,sizeof(GPUNode)*numNodes,cudaMemcpyDeviceToHost);
@@ -266,6 +282,7 @@ void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, GPU
 		{
 			node->hostTriangles = new uint32[node->primLength];
 			d_gpuTriangleArray->copyList(node->hostTriangles, node->primBaseIdx, node->primLength);
+			*h_numLeaves++;
 		}
 	}
 }

@@ -36,6 +36,7 @@ __device__ uint32 d_numTotalNodes=0;
 ////////////////////
 // Tree Building
 ////////////////////
+__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, Mesh * m);
 __global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
 __global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * nodeCounts, int * triangleCounts);
 
@@ -45,7 +46,7 @@ uint32 getThreadsPerNode(int,int);
 //  Data Import/Export
 ////////////////////
 void copyToGPU(Mesh *mesh);
-void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_nodeList, GPUNode * d_numNodes, uint32 numNodes);
+void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_nodeList, uint32 * h_numLeaves, GPUNode * d_nodes, uint32 numNodes);
 void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds);
 void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes);
 void dumpTriangles(ofstream& file, uint32 nodeID,GPUNode* nodes);

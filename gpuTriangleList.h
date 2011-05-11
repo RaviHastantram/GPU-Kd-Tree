@@ -2,6 +2,7 @@
 #define __GPU_TRIANGLE_LIST_H
 
 #include "kdtypes.h"
+#include "lock.h"
 //20k triangles.
 #define GPU_TRIANGLE_ARRAY_SIZE 20000
 
@@ -36,11 +37,21 @@ public:
 		return t;
 	}
 
+	__device__ void lock()
+	{
+		l.lock();
+	}
+
+	__device__ void unlock()
+	{
+		l.unlock();
+	}
 
 private:
 	uint32  capacity;	
 	uint32  nextAvailable;	
 	uint32* triangles;
+	Lock l;
 };
 
 #endif

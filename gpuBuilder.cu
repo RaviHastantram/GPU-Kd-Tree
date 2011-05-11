@@ -135,8 +135,11 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 
 	if(threadIdx.x==0)
 	{
+		gpuTriangleList->lock();
 		leftPrimBaseIdx=gpuTriangleList->allocateList(node->primLength);
 		rightPrimBaseIdx=gpuTriangleList->allocateList(node->primLength);
+		gpuTriangleList->unlock();
+
 		leftList=gpuTriangleList->getList(leftPrimBaseIdx);
 		rightList=gpuTriangleList->getList(rightPrimBaseIdx);
 	}

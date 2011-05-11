@@ -12,39 +12,10 @@ using namespace std;
 // Tree Building
 //
 ///////////////////////////
-uint32 getActiveNodes()
-{
-	uint32 numNodes=0;
-	 
-	if(cudaMemcpyFromSymbol(&numNodes,
-				"d_numActiveNodes",
-				sizeof(uint32),
-				0,
-				cudaMemcpyDeviceToHost) != cudaSuccess)
-	{
-		printf("Copying d_numActiveNodes failed.\n");
-	}
-	return numNodes;
-}
 
 uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
 {
-	return 0;
-}
-
-uint32 getActiveTriangles()
-{
-	uint32 numTriangles=0;
-	
-	if(cudaMemcpyFromSymbol(&numTriangles,
-				"d_numActiveTriangles",
-				sizeof(uint32),
-				0,
-				cudaMemcpyDeviceToHost) != cudaSuccess)
-	{
-		printf("Copying d_numActiveTriangles failed.\n");
-	}
-	return numTriangles;
+	return 32;
 }
 
 __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
@@ -113,7 +84,7 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 	}
 }
 
-__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * counts)
+__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * nodeCounts, int * triangleCounts)
 {
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
@@ -136,7 +107,8 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 
 	if(threadIdx.x==0)
 	{
-		counts[blockIdx.x]=0;
+		nodeCounts[blockIdx.x]=0;
+		triangleCounts[blockIdx.x]=0;
 	}
 	
 	if(node->isLeaf)
@@ -254,7 +226,8 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 		rightNode->primLength=rightCount;
 		rightNode->nodeDepth=node->nodeDepth+1;
 	
-		counts[blockIdx.x]=1;
+		nodeCounts[blockIdx.x]=1;
+		triangleCounts[blockIdx.x]=leftCount+rightCount;
 	}
 }
 

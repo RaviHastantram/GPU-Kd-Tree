@@ -31,28 +31,43 @@ int main(int argc, char  ** argv)
 	int threadsPerNode = 0;
 	uint32 activeOffset;
 
-	thrust::device_vector<int> d_countsVec(MAX_BLOCKS);
-	int * d_counts = thrust::raw_pointer_cast(&d_countsVec[0]);
-	int count=0;
+	thrust::device_vector<int> d_nodeCountsVec(MAX_BLOCKS);
+	thrust::device_vector<int> d_triangleCountsVec(MAX_BLOCKS);
+	int * d_nodeCounts = thrust::raw_pointer_cast(&d_nodeCountsVec[0]);
+	int * d_triangleCounts = thrust::raw_pointer_cast(&d_triangleCountsVec[0]);
+	int nodeCount=0;
+	int triangleCount=0;
 
 	while(numActiveNodes>0)
 	{
+		// copy offset to first active node to device
 		cudaMemcpy(&d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice);
-
+		
+		// calculate number of threads to assign to each node
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
+		// compute the split plane and value of each node
 		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray,d_triangleArray);
 
-		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray,d_counts);
+		// split each node according to the plane and value chosen
+		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray,d_nodeCounts,d_triangleCounts);
 
+		// force threads to synchronize globally
 		cudaThreadSynchronize();
 		
-		numActiveNodes = getActiveNodes();
-		numActiveTriangles = getActiveTriangles();
-
+		// increment pointer to first active node
 		cudaMemcpy(&activeOffset,&d_activeOffset,sizeof(uint32),cudaMemcpyDeviceToHost);
-		count=thrust::count(d_countsVec.begin(), d_countsVec.end() + numActiveNodes, 1);
-		activeOffset += 2*count;		
+		activeOffset += numActiveNodes;
+
+		// calculate number of active nodes in next round
+		nodeCount=thrust::count(d_nodeCountsVec.begin(), d_nodeCountsVec.end() + numActiveNodes, 1);
+		numActiveNodes=2*nodeCount;		
+	
+		// calculate number of triangles in next round
+		triangleCount=thrust::reduce(d_triangleCountsVec.begin(),
+					d_triangleCountsVec.end() +  numActiveNodes,
+					 (int) 0, thrust::plus<int>());
+		numActiveTriangles=triangleCount;		
 	}
 
 	//copyToHost(kd);

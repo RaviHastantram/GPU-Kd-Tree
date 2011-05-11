@@ -36,10 +36,8 @@ __device__ uint32 d_activeOffset=0;
 // Tree Building
 ////////////////////
 __global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
-__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * counts);
+__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * nodeCounts, int * triangleCounts);
 
-uint32 getActiveNodes();
-uint32 getActiveTriangles();
 uint32 getThreadsPerNode(int,int);
 
 ////////////////////

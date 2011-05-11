@@ -31,8 +31,9 @@ __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleAr
 	{
 		h_node.hostTriangles[i]=i;
 	}
-
 	h_node.primBaseIdx=d_triangleArray->pushList(&h_node.hostTriangles,m->numTriangles);
+	delete [] h_node.hostTriangles;
+
 	assert(h_node.primBaseIdx==0);
 
 	h_node.primLength=m->numTriangles;

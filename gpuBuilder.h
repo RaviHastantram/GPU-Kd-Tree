@@ -12,7 +12,7 @@ using namespace std;
 //#include "file.h"
 
 #define MAX_BLOCK_SIZE 128
-#define MAX_BLOCKS 32000;
+#define MAX_BLOCKS 32000
 
 typedef u_int64_t uint64_t;
 
@@ -36,7 +36,7 @@ __device__ uint32 d_activeOffset=0;
 // Tree Building
 ////////////////////
 __global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
-__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
+__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * counts);
 
 uint32 getActiveNodes();
 uint32 getActiveTriangles();

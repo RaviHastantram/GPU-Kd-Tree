@@ -7,11 +7,11 @@ USR  = /usr/
 
 CC = nvcc
 
-INCLUDE = -I$(LOCAL)/include 
+INCLUDE = -I$(LOCAL)/include -I./thrust
 LIBDIR = -L$(LOCAL)/lib
 LIBS  =
 
-CFLAGS =  -m32 -arch sm_11
+CFLAGS =  -arch sm_20
 
 .SUFFIXES: .o .cpp .cxx .cu
 

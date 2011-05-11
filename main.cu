@@ -1,7 +1,9 @@
 #include <iostream>
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/count.h>
 
 #include "kdtypes.h"
-#include "util.h"
 #include "geom.h"
 #include "gpuBuilder.h"
 #include "util.h"
@@ -30,12 +32,12 @@ int main(int argc, char  ** argv)
 	uint32 activeOffset;
 
 	thrust::device_vector<int> d_countsVec(MAX_BLOCKS);
-	int * d_counts = thrust::raw_pointer_cast(&d_vec[0]);
+	int * d_counts = thrust::raw_pointer_cast(&d_countsVec[0]);
 	int count=0;
 
 	while(numActiveNodes>0)
 	{
-		cudaMemcpy(&d_activeOffset,&activeOffset,sizeof(uint32),0,cudaMemcpyHostToDevice);
+		cudaMemcpy(&d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice);
 
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
@@ -48,7 +50,7 @@ int main(int argc, char  ** argv)
 		numActiveNodes = getActiveNodes();
 		numActiveTriangles = getActiveTriangles();
 
-		cudaMemcpyFromSymbol(&activeOffset,&d_activeOffset,sizeof(uint32),0,cudaMemcpyDeviceToHost);
+		cudaMemcpy(&activeOffset,&d_activeOffset,sizeof(uint32),cudaMemcpyDeviceToHost);
 		count=thrust::count(d_countsVec.begin(), d_countsVec.end() + numActiveNodes, 1);
 		activeOffset += 2*count;		
 	}

@@ -324,9 +324,8 @@ void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes)
 	float data1 = 0; 
 	if(node->isLeaf)
 	{
-		data1 = nodeID;
 		file.write((char*)&data0, sizeof(uint32));
-		file.write((char*)&data1, sizeof(uint32));
+		file.write((char*)&nodeID, sizeof(uint32));
 	}
 	else
 	{

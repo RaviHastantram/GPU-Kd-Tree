@@ -8,24 +8,51 @@
 #include "geom.h"
 
 using namespace std;
-
-#define DBG_BUFSIZE 20971520
-
-__device__ char * DBG_BUF[DBG_BUFSIZE];
-
-#define __DEBUG__ 0
-#if __DEBUG__==1
-#define DBG(...) sprintf(DBG_BUF,__VA_ARGS__)
-#else
-#define DBG(...) ((void)0)
-#endif
-
+ 
+__device__ uint32 d_triangleCounts[MAX_BLOCKS];
+__device__ uint32 d_nodeCounts[MAX_BLOCKS];
 
 ///////////////////////////
 // 
 // Tree Building
 //
 ///////////////////////////
+
+uint32 countActiveNodes(uint32 numBlocks)
+{
+	uint32 numActiveNodes;
+	countActiveNodesKernel<<<1,1>>>(numBlocks);
+	cudaMemcpy(&numActiveNodes,&d_numActiveNodes,sizeof(uint32),cudaMemcpyDeviceToHost);
+	return numActiveNodes;
+}
+
+uint32 countActiveTriangles(uint32 numBlocks)
+{
+	uint32 numActiveTriangles;
+	countActiveTrianglesKernel<<<1,1>>>(numBlocks);
+	cudaMemcpy(&numActiveTriangles,&d_numActiveTriangles,sizeof(uint32),cudaMemcpyDeviceToHost);
+	return numActiveTriangles;
+}
+
+__global__ void countActiveNodesKernel(uint32 numBlocks)
+{
+	uint32 count=0;
+	for(int i=0;i<numBlocks;i++)
+	{
+		count += d_nodeCounts[i];
+	}
+	d_numActiveNodes=count;
+}
+
+__global__ void countActiveTrianglesKernel(uint32 numBlocks)
+{
+	uint32 count=0;
+	for(int i=0;i<numBlocks;i++)
+	{
+		count += d_triangleCounts[i];
+	}
+	d_numActiveTriangles=count;
+}
 
 uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
 {
@@ -121,7 +148,7 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 	}
 }
 
-__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * nodeCounts, int * triangleCounts)
+__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
 {
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
@@ -144,8 +171,8 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 
 	if(threadIdx.x==0)
 	{
-		nodeCounts[blockIdx.x]=0;
-		triangleCounts[blockIdx.x]=0;
+		d_nodeCounts[blockIdx.x]=0;
+		d_triangleCounts[blockIdx.x]=0;
 	}
 	
 	if(node->isLeaf)
@@ -266,8 +293,8 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 		rightNode->primLength=rightCount;
 		rightNode->nodeDepth=node->nodeDepth+1;
 	
-		nodeCounts[blockIdx.x]=1;
-		triangleCounts[blockIdx.x]=leftCount+rightCount;
+		d_nodeCounts[blockIdx.x]=1;
+		d_triangleCounts[blockIdx.x]=leftCount+rightCount;
 	}
 }
 

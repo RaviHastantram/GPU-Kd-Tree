@@ -19,7 +19,7 @@ typedef u_int64_t uint64_t;
 __device__ Point* d_points;
 __device__ Triangle* d_triangles;
 __device__ Mesh* d_mesh;
-__device__ uint32 d_numActiveTriangles;
+
 
 //////
 //
@@ -31,6 +31,7 @@ __device__ uint32 d_numActiveTriangles;
 __device__ uint32 d_numActiveNodes=0;
 __device__ uint32 d_activeOffset=0;
 __device__ uint32 d_numTotalNodes=0;
+__device__ uint32 d_numActiveTriangles=0;
 
 
 ////////////////////
@@ -38,9 +39,16 @@ __device__ uint32 d_numTotalNodes=0;
 ////////////////////
 __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleArray *d_triangleArray, Mesh * m);
 __global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
-__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, int * nodeCounts, int * triangleCounts);
+__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList);
 
 uint32 getThreadsPerNode(int,int);
+
+__global__ void countActiveNodesKernel(uint32 numBlocks);
+__global__ void countActiveTrianglesKernel(uint32 numBlocks);
+uint32 countActiveNodes(uint32 numBlocks);
+uint32 countActiveTriangles(uint32 numBlocks);
+
+
 
 ////////////////////
 //  Data Import/Export

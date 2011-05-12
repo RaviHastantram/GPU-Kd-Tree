@@ -1274,6 +1274,7 @@ static e_ply_storage_mode ply_arch_endian(void) {
 }
 
 static int ply_type_check(void) {
+	/**
     assert(sizeof(char) == 1);
     assert(sizeof(unsigned char) == 1);
     assert(sizeof(short) == 2);
@@ -1290,7 +1291,9 @@ static int ply_type_check(void) {
     if (sizeof(unsigned long) != 4) return 0;
     if (sizeof(float) != 4) return 0;
     if (sizeof(double) != 8) return 0;
+	**/
     return 1;
+
 }
 
 /* ----------------------------------------------------------------------

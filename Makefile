@@ -11,7 +11,7 @@ INCLUDE = -I$(LOCAL)/include -I./thrust
 LIBDIR = -L$(LOCAL)/lib
 LIBS  =
 
-CFLAGS =  -arch sm_20
+CFLAGS = -DTHRUST_DEBUG  -arch compute_11 -g -G -m64
 
 .SUFFIXES: .o .cpp .cxx .cu
 

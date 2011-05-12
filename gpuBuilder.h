@@ -43,10 +43,10 @@ __global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 
 uint32 getThreadsPerNode(int,int);
 
-__global__ void countActiveNodesKernel(uint32 numBlocks);
-__global__ void countActiveTrianglesKernel(uint32 numBlocks);
-uint32 countActiveNodes(uint32 numBlocks);
-uint32 countActiveTriangles(uint32 numBlocks);
+__global__ void countActiveNodesKernel(uint32 numBlocks, uint32 * d_numActiveNodes);
+__global__ void countActiveTrianglesKernel(uint32 numBlocks, uint32 * d_numActiveTriangles);
+uint32 countActiveNodes(uint32 numBlocks, uint32 * d_numActiveNodes);
+uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles);
 
 
 

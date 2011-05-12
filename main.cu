@@ -30,6 +30,12 @@ int main(int argc, char  ** argv)
 	uint32 numLeaves=0;
 	uint32 currRound=0;
 
+	uint32 * d_numActiveNodes;
+	uint32 * d_numActiveTriangles;
+
+	HANDLE_ERROR( cudaMalloc( &d_numActiveNodes, sizeof(uint32)) );
+	HANDLE_ERROR( cudaMalloc( &d_numActiveTriangles, sizeof(uint32)) );
+
 	printf("initializeActiveNodeList\n");
 	fflush(stdout);
 	// initialize the node list
@@ -66,7 +72,7 @@ int main(int argc, char  ** argv)
 	
 		printf("Count active nodes\n");
 		// calculate number of active nodes in next round		
-		numActiveNodes=countActiveNodes(numActiveNodes);
+		numActiveNodes=countActiveNodes(numActiveNodes,d_numActiveNodes);
 		printf("numActiveNodes=%d\n",numActiveNodes);
 
 		// update total nodes
@@ -74,7 +80,7 @@ int main(int argc, char  ** argv)
 	
 		printf("Count active triangles\n");
 		// calculate number of triangles in next round
-		numActiveTriangles=countActiveTriangles(numActiveNodes);		
+		numActiveTriangles=countActiveTriangles(numActiveNodes,d_numActiveTriangles);		
 	}
 
 	// allocate host storage for nodes

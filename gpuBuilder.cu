@@ -1,11 +1,13 @@
 #include "kdtypes.h"
 #include "gpuBuilder.h"
+#include "geom.h"
+#include "util.h"
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 #include <cfloat>
 #include <cassert>
-#include "geom.h"
+
 
 using namespace std;
  
@@ -18,40 +20,40 @@ __device__ uint32 d_nodeCounts[MAX_BLOCKS];
 //
 ///////////////////////////
 
-uint32 countActiveNodes(uint32 numBlocks)
+uint32 countActiveNodes(uint32 numBlocks, uint32 * d_numActiveNodes)
 {
 	uint32 numActiveNodes;
-	countActiveNodesKernel<<<1,1>>>(numBlocks);
-	cudaMemcpy(&numActiveNodes,&d_numActiveNodes,sizeof(uint32),cudaMemcpyDeviceToHost);
+	countActiveNodesKernel<<<1,1>>>(numBlocks,d_numActiveNodes);
+	HANDLE_ERROR( cudaMemcpy(&numActiveNodes,d_numActiveNodes,sizeof(uint32),cudaMemcpyDeviceToHost) );
 	return numActiveNodes;
 }
 
-uint32 countActiveTriangles(uint32 numBlocks)
+uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles)
 {
 	uint32 numActiveTriangles;
-	countActiveTrianglesKernel<<<1,1>>>(numBlocks);
-	cudaMemcpy(&numActiveTriangles,&d_numActiveTriangles,sizeof(uint32),cudaMemcpyDeviceToHost);
+	countActiveTrianglesKernel<<<1,1>>>(numBlocks,d_numActiveTriangles);
+	HANDLE_ERROR( cudaMemcpy(&numActiveTriangles,d_numActiveTriangles,sizeof(uint32),cudaMemcpyDeviceToHost) );
 	return numActiveTriangles;
 }
 
-__global__ void countActiveNodesKernel(uint32 numBlocks)
+__global__ void countActiveNodesKernel(uint32 numBlocks, uint32 * d_numActiveNodes)
 {
 	uint32 count=0;
 	for(int i=0;i<numBlocks;i++)
 	{
 		count += d_nodeCounts[i];
 	}
-	d_numActiveNodes=count;
+	*d_numActiveNodes=2;
 }
 
-__global__ void countActiveTrianglesKernel(uint32 numBlocks)
+__global__ void countActiveTrianglesKernel(uint32 numBlocks, uint32 * d_numActiveTriangles)
 {
 	uint32 count=0;
 	for(int i=0;i<numBlocks;i++)
 	{
 		count += d_triangleCounts[i];
 	}
-	d_numActiveTriangles=count;
+	*d_numActiveTriangles=2;
 }
 
 uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
@@ -307,24 +309,24 @@ void copyToGPU(Mesh *mesh)
 {
 	//Copy the Points list
 	int size = sizeof(Point)*(mesh->numPoints);
-	cudaMalloc(&d_points,size);
-	cudaMemcpy(d_points,mesh->points,size,cudaMemcpyHostToDevice);
+	HANDLE_ERROR( cudaMalloc(&d_points,size) );
+	HANDLE_ERROR( cudaMemcpy(d_points,mesh->points,size,cudaMemcpyHostToDevice) );
 
 	//Copy the triangle list
 	size = sizeof(Triangle)*(mesh->numTriangles);
-	cudaMalloc(&d_triangles, size);
-	cudaMemcpy(d_triangles,mesh->triangles,size,cudaMemcpyHostToDevice);
+	HANDLE_ERROR( cudaMalloc(&d_triangles, size) );
+	HANDLE_ERROR( cudaMemcpy(d_triangles,mesh->triangles,size,cudaMemcpyHostToDevice) );
 
 	//Copy the mesh
 	size = sizeof(Mesh);
-	cudaMalloc(&d_mesh,size);
-	cudaMemcpy(d_mesh,mesh,size,cudaMemcpyHostToDevice);
+	HANDLE_ERROR( cudaMalloc(&d_mesh,size) );
+	HANDLE_ERROR( cudaMemcpy(d_mesh,mesh,size,cudaMemcpyHostToDevice) );
 }
 
 void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, uint32 * h_numLeaves, GPUNode * d_gpuNodes, uint32 numNodes)
 {
 	// copy the nodes
-	cudaMemcpy(h_gpuNodes,d_gpuNodes,sizeof(GPUNode)*numNodes,cudaMemcpyDeviceToHost);
+	HANDLE_ERROR( cudaMemcpy(h_gpuNodes,d_gpuNodes,sizeof(GPUNode)*numNodes,cudaMemcpyDeviceToHost) );
 	for(int i=0;i<numNodes;i++)
 	{
 		GPUNode * node = &h_gpuNodes[i];

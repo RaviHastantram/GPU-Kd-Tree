@@ -38,12 +38,16 @@ int main(int argc, char  ** argv)
 	int triangleCount=0;
 	int numTotalNodes=1;
 	uint32 numLeaves=0;
+	uint32 currRound=0;
 
 	// initialize the node list
-	initializeActiveNodeList(d_nodeArray,m);
+	initializeActiveNodeList(d_nodeArray,d_triangleArray,m);
 
 	while(numActiveNodes>0)
 	{
+		printf("Current round:%d\n",currRound);
+		currRound++;
+
 		// copy offset to first active node to device
 		cudaMemcpy(&d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice);
 		

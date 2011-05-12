@@ -9,6 +9,18 @@
 
 using namespace std;
 
+#define DBG_BUFSIZE 20971520
+
+__device__ char * DBG_BUF[DBG_BUFSIZE];
+
+#define __DEBUG__ 0
+#if __DEBUG__==1
+#define DBG(...) sprintf(DBG_BUF,__VA_ARGS__)
+#else
+#define DBG(...) ((void)0)
+#endif
+
+
 ///////////////////////////
 // 
 // Tree Building
@@ -31,7 +43,7 @@ __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleAr
 	{
 		h_node.hostTriangles[i]=i;
 	}
-	h_node.primBaseIdx=d_triangleArray->pushList(&h_node.hostTriangles,m->numTriangles);
+	h_node.primBaseIdx=d_triangleArray->pushList(h_node.hostTriangles,m->numTriangles);
 	delete [] h_node.hostTriangles;
 
 	assert(h_node.primBaseIdx==0);

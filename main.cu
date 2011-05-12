@@ -6,13 +6,14 @@
 #include "util.h"
 #include "gpuTriangleList.h"
 #include "gpuNode.h"
+#include "cuPrintf.cuh"
 
 using namespace std;
 
 int main(int argc, char  ** argv)
 {
 	char * inputFile = argv[1];
-
+	cudaPrintfInit();
 	// load ply
 	Mesh * m = loadMeshFromPLY(inputFile);
 	
@@ -51,6 +52,7 @@ int main(int argc, char  ** argv)
 		// compute the split plane and value of each node
 		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray,d_triangleArray);
 
+		cudaPrintfDisplay(stdout,true);
 		printf("splitNodes\n");
 		// split each node according to the plane and value chosen
 		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray);
@@ -85,6 +87,6 @@ int main(int argc, char  ** argv)
 	
 	// copy triangles to disk
 	dumpKDTree(h_gpuNodes, numTotalNodes, numLeaves,  m->bounds);
-		
+	cudaPrintfEnd();		
 	return 0;
 }

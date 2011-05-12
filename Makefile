@@ -4,14 +4,15 @@
 
 LOCAL = /usr/local
 USR  = /usr/
+TACC = /opt/apps/cuda/3.2/cuda/lib/
 
 CC = nvcc
 
-INCLUDE = -I$(LOCAL)/include -I./thrust
+INCLUDE = -I$(LOCAL)/include -I./thrust -I$(TACC_CUDA_INC)
 LIBDIR = -L$(LOCAL)/lib
-LIBS  =
+LIBS  = -L$(TACC_CUDA_LIB) -L$(TACC) -lcudart
 
-CFLAGS = -DTHRUST_DEBUG  -arch compute_11 -g -G -m64
+CFLAGS = -arch compute_11 -g -G -m64
 
 .SUFFIXES: .o .cpp .cxx .cu
 

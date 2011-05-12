@@ -6,6 +6,7 @@
 #include <cfloat>
 #include <cassert>
 #include "geom.h"
+#include "cuPrintf.cu"
 
 using namespace std;
  
@@ -89,7 +90,7 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 	
 	float min=FLT_MAX;
 	float max=FLT_MIN;
- 
+	cuPrintf("Msg from kernel, tid = %d\n",threadIdx.x); 
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + d_activeOffset;
 	GPUNode * node = d_gpuNodes->getNode(nodeIdx);

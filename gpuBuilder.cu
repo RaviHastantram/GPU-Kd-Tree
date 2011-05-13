@@ -266,9 +266,16 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	
 	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
 	{
-		offL[threadIdx.x]=0;
-		offR[threadIdx.x]=0;
-		offD[threadIdx.x]=0;
+		//Explicitly initialize the values to zero.
+		if(threadIdx.x == 0)
+		{
+			for(int k = 0; k < blockDim.x; k++)
+			{
+				offL[k]=0;
+				offR[k]=0;
+				offD[k]=0;
+			}
+		}
 		__syncthreads();
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = &d_triangles[triangleID];
@@ -311,31 +318,32 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		}
 		/**
 		* Ravi:  Check these arrays.  This is strange.
-		**/
+		
 		__syncthreads();
 		cuPrintf("BEFORE:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
 		__syncthreads();
-		
+		**/
 		if(threadIdx.x==0)
 		{
 			cuPrintf("blockDim.x=%d\n",blockDim.x);
 			for(int k=1;k<blockDim.x;k++)
 			{		
-				cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
+				//cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
 				offL[k]   =  offL[k]  +  offL[k-1];
 
-				cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
+				//cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
 				offR[k]  =  offR[k]  +  offR[k-1];
 				
-				cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
+				//cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
 				offD[k]  =  offD[k]  +  offD[k-1];
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
 			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];
+			cuPrintf("leftCount = %d, rightCount = %d,offL = %d, offD = %d, offR = %d\n",leftCount,rightCount,offL[blockDim.x-1],offD[blockDim.x-1],offR[blockDim.x-1]);
 		}
 	  
 		__syncthreads();
-  		cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
+  		//cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
 		uint32 _offL=offL[threadIdx.x]-1;
 		uint32 _offR = offR[threadIdx.x]-1;
 		uint32 tc0=leftBase+_offL;
@@ -375,7 +383,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		}
 		currIdx += blockDim.x;
 	}
-	return;
+	
 	if(threadIdx.x==0)
 	{
 		gpuNodes.lock();

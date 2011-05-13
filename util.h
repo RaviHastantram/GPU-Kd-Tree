@@ -19,7 +19,7 @@ static void HandleError( cudaError_t err,
 }
 
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
-
+#define CHECK_ERROR() HANDLE_ERROR( cudaGetLastError() )
 static int vertex_cb(p_ply_argument argument);
 static int face_cb(p_ply_argument argument);
 Mesh * loadMeshFromPLY(const char * filename);

@@ -11,9 +11,6 @@
 
 
 using namespace std;
- 
-__device__ uint32 d_triangleCounts[MAX_BLOCKS];
-__device__ uint32 d_nodeCounts[MAX_BLOCKS];
 
 ///////////////////////////
 // 
@@ -21,40 +18,54 @@ __device__ uint32 d_nodeCounts[MAX_BLOCKS];
 //
 ///////////////////////////
 
-uint32 countActiveNodes(uint32 numBlocks, uint32 * d_numActiveNodes)
+void intializeDeviceVariables()
+{
+	HANDLE_ERROR( cudaMalloc(&d_numActiveNodes, sizeof(uint32) ) );
+	HANDLE_ERROR( cudaMalloc(&d_activeOffset, sizeof(uint32) ) );
+	HANDLE_ERROR( cudaMalloc(&d_numTotalNodes, sizeof(uint32) ) );
+	HANDLE_ERROR( cudaMalloc(&d_numActiveTriangles, sizeof(uint32) ) );
+	HANDLE_ERROR( cudaMalloc(&d_numActiveNodes, sizeof(uint32) ) );
+
+	HANDLE_ERROR( cudaMalloc(&d_triangleCounts, sizeof(uint32) * MAX_BLOCKS) );
+	HANDLE_ERROR( cudaMalloc(&d_nodeCounts, sizeof(uint32) * MAX_BLOCKS) );
+}
+
+uint32 countActiveNodes(uint32 numBlocks, uint32 * d_numActiveNodes, uint32 * d_nodeCounts)
 {
 	uint32 numActiveNodes;
-	countActiveNodesKernel<<<1,1>>>(numBlocks,d_numActiveNodes);
+	countActiveNodesKernel<<<1,1>>>(numBlocks,d_numActiveNodes, d_nodeCounts);
+	cudaError_t err=cudaGetLastError();
+	HANDLE_ERROR( err );
 	HANDLE_ERROR( cudaMemcpy(&numActiveNodes,d_numActiveNodes,sizeof(uint32),cudaMemcpyDeviceToHost) );
 	return numActiveNodes;
 }
 
-uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles)
+uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles, uint32 * d_triangleCounts)
 {
 	uint32 numActiveTriangles;
-	countActiveTrianglesKernel<<<1,1>>>(numBlocks,d_numActiveTriangles);
+	countActiveTrianglesKernel<<<1,1>>>(numBlocks,d_numActiveTriangles, d_triangleCounts);
 	HANDLE_ERROR( cudaMemcpy(&numActiveTriangles,d_numActiveTriangles,sizeof(uint32),cudaMemcpyDeviceToHost) );
 	return numActiveTriangles;
 }
 
-__global__ void countActiveNodesKernel(uint32 numBlocks, uint32 * d_numActiveNodes)
+__global__ void countActiveNodesKernel(uint32 numBlocks, uint32 * d_numActiveNodes, uint32 * d_nodeCounts)
 {
 	uint32 count=0;
 	for(int i=0;i<numBlocks;i++)
 	{
 		count += d_nodeCounts[i];
 	}
-	*d_numActiveNodes=2;
+	*d_numActiveNodes=count;
 }
 
-__global__ void countActiveTrianglesKernel(uint32 numBlocks, uint32 * d_numActiveTriangles)
+__global__ void countActiveTrianglesKernel(uint32 numBlocks, uint32 * d_numActiveTriangles, uint32 * d_triangleCounts)
 {
 	uint32 count=0;
 	for(int i=0;i<numBlocks;i++)
 	{
 		count += d_triangleCounts[i];
 	}
-	*d_numActiveTriangles=2;
+	*d_numActiveTriangles=count;
 }
 
 uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
@@ -85,7 +96,9 @@ __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleAr
 	d_gpuNodes->pushNode(&h_node);
 }
 
-__device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
+__device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, 
+				uint32 * d_nodeCounts, uint32 * d_triangleCounts, uint32 * d_activeOffset,
+				Triangle * d_triangles, Point * d_points)
 {
 	__shared__ float mins[MAX_BLOCK_SIZE];
 	__shared__ float maxs[MAX_BLOCK_SIZE];
@@ -94,7 +107,7 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 	float max=FLT_MIN;
 	cuPrintf("Msg from kernel, tid = %d\n",threadIdx.x); 
 	uint32 dim = blockIdx.x % 3;
-	uint32 nodeIdx = blockIdx.x + d_activeOffset;
+	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
 	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
 
 	if(node->nodeDepth>MAX_DEPTH)
@@ -151,7 +164,9 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 	}
 }
 
-__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList)
+__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, uint32 * d_nodeCounts,
+				uint32 * d_triangleCounts, uint32 * d_activeOffset,
+				Triangle * d_triangles, Point * d_points)
 {
 	__shared__ uint32 offL[MAX_BLOCK_SIZE];
 	__shared__ uint32 offD[MAX_BLOCK_SIZE];
@@ -163,7 +178,7 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 
 	uint32 triangleChoice;
 
-	uint32 nodeIdx = blockIdx.x + d_activeOffset;
+	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
 	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
 	int dim = node->splitChoice;
 	float splitValue = node->splitValue;
@@ -317,11 +332,6 @@ void copyToGPU(Mesh *mesh)
 	size = sizeof(Triangle)*(mesh->numTriangles);
 	HANDLE_ERROR( cudaMalloc(&d_triangles, size) );
 	HANDLE_ERROR( cudaMemcpy(d_triangles,mesh->triangles,size,cudaMemcpyHostToDevice) );
-
-	//Copy the mesh
-	size = sizeof(Mesh);
-	HANDLE_ERROR( cudaMalloc(&d_mesh,size) );
-	HANDLE_ERROR( cudaMemcpy(d_mesh,mesh,size,cudaMemcpyHostToDevice) );
 }
 
 void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, uint32 * h_numLeaves, GPUNode * d_gpuNodes, uint32 numNodes)

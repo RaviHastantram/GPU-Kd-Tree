@@ -10,6 +10,8 @@
 #include "geom.h"
 #include "cuPrintf.cu"
 
+#define MAX_ITERATIONS 100000
+
 using namespace std;
 
 
@@ -150,8 +152,8 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 	maxs[threadIdx.x]=FLT_MIN;
 
 	uint32 currIdx = threadIdx.x;
-
-	while(currIdx<node->primLength)
+	cuPrintf("computeCost:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
+	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
 	{
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = &d_triangles[triangleID];
@@ -249,8 +251,9 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	float low = FLT_MIN;
 	float high = FLT_MAX;
 	
+	cuPrintf("splitNode:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
 	//Need to initialize the offL, offD, offR arrays 
-	while(currIdx<node->primLength)
+	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
 	{
 		offL[threadIdx.x]=0;
 		offR[threadIdx.x]=0;
@@ -374,7 +377,7 @@ void copyToHost(GPUTriangleArray gpuTriangleArray, GPUNode * h_gpuNodes, uint32 
 {
 	// copy the nodes
 	HANDLE_ERROR( cudaMemcpy(h_gpuNodes,d_gpuNodes,sizeof(GPUNode)*numNodes,cudaMemcpyDeviceToHost) );
-	for(int i=0;i<numNodes;i++)
+	for(int i=0;i<numNodes && i< MAX_ITERATIONS;i++)
 	{
 		GPUNode * node = &h_gpuNodes[i];
 		if(node->isLeaf)
@@ -465,7 +468,7 @@ void dumpTriangles(ofstream& file, uint32 nodeID, GPUNode* nodes)
 
 	//8. Write the triangles
 	uint32 triangleIndex = 0; //index of the triangle in the PLY file
-	for(int i = 0; i < numTriangles; i++)
+	for(int i = 0; i < numTriangles && i < MAX_ITERATIONS; i++)
 	{
 		triangleIndex = node->hostTriangles[i];
 		file.write((char*)&triangleIndex,sizeof(triangleIndex));

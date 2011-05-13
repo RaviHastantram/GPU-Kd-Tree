@@ -8,6 +8,8 @@
 #include "gpuNode.h"
 #include "cuPrintf.cuh"
 
+#define MAX_ITERATIONS 1000
+
 using namespace std;
 
 extern Point * d_points;
@@ -21,6 +23,8 @@ extern uint32 * d_numTotalNodes;
 
 int main(int argc, char  ** argv)
 {
+	uint32  currIteration=0;
+
 	char * inputFile = argv[1];
 	cudaPrintfInit();
 	// load ply
@@ -51,8 +55,10 @@ int main(int argc, char  ** argv)
 
 	CHECK_ERROR();
 
-	while(numActiveNodes>0)
+	while(currIteration < MAX_ITERATIONS && numActiveNodes>0)
 	{
+		currIteration++;
+
 		printf("Current round:%d\n",currRound);
 		currRound++;
 

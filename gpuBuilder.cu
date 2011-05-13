@@ -336,7 +336,12 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d,L=%d,R=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b,leftOff,rightOff);
 		leftOff += offL[blockDim.x-1]+offD[blockDim.x-1];
 		rightOff += offR[blockDim.x-1]+offD[blockDim.x-1];
-		
+		/***
+		* Ravi: 	Run this code.   The bug is somewhere around here.   
+		*		If you let the else statement always execute, at some point
+		*		the offsets leftBase and rightBase will run out of bounds of the
+		*		array allocated for triangle ids
+		**/	
 		if(leftBase>10000 || rightBase>10000)
 			{
 				cuPrintf("leftBase:%d,rightBase:%d\n",leftBase,rightBase);

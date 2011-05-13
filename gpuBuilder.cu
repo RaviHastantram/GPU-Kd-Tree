@@ -260,7 +260,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	float low = FLT_MAX;
 	float high = FLT_MIN;
 	
-	//cuPrintf("splitNode:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
+	cuPrintf("splitNode:tid=%d, primLength=%d,blockDim.x=%d\n",threadIdx.x,node->primLength,blockDim.x);
 	//Need to initialize the offL, offD, offR arrays 
 	int lim=node->primLength;
 	

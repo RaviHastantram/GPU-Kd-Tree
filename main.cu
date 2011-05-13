@@ -62,34 +62,36 @@ int main(int argc, char  ** argv)
 		printf("Current round:%d\n",currRound);
 		currRound++;
 
-		printf("cudaMemcpy\n");
+		printf("calling cudaMemcpy\n");
 		// copy offset to first active node to device
 		HANDLE_ERROR( cudaMemcpy(d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice) );
 		
 		// calculate number of threads to assign to each node
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
-		printf("computeCost\n");
+		printf("calling computeCost\n");
 		CHECK_ERROR();
 		// compute the split plane and value of each node
 		computeCost <<< numActiveNodes,threadsPerNode >>>(nodeArray, triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset, 
 								d_triangles, d_points);
-		CHECK_ERROR();
-		cudaPrintfDisplay(stdout,true);
-		CHECK_ERROR();
+		//CHECK_ERROR();
+		//cudaPrintfDisplay(stdout,true);
+		//CHECK_ERROR();
 		
 		HANDLE_ERROR(cudaThreadSynchronize());
 
 		
 		//CHECK_ERROR();
 
-		printf("splitNodes\n");
+		printf("calling splitNodes\n");
 		// split each node according to the plane and value chosen
 		splitNodes<<<numActiveNodes,threadsPerNode>>>(nodeArray, triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset,
 								d_triangles, d_points);
 		CHECK_ERROR();
+		cudaPrintfDisplay(stdout,true);
+		//CHECK_ERROR();
 
 		printf("cudaThreadSynchronize\n");
 		// force threads to synchronize globally

@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -V
 #$ -cwd
-#$ -N ravi-GPU-Kd-Tree.
+#$ -N agrippa-GPU-Kd-Tree
 #$ -j y
 #$ -o $JOB_NAME.o$JOB_ID
 #$ -pe 8way 8
@@ -10,5 +10,5 @@
 #$ -M ravi@cs.utexas.edu
 #$ -A A-cs41
 #$ -P data
-./gpukd bunny.ply
+./gpukd bun.ply
 

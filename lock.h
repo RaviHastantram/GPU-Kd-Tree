@@ -11,7 +11,7 @@ struct Lock {
         HANDLE_ERROR( cudaMemset( mutex, 0, sizeof(int) ) );
     }
 
-    ~Lock( void ) {
+    void destroy( void ) {
         cudaFree( mutex );
     }
 

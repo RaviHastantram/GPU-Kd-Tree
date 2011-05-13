@@ -42,6 +42,29 @@ void initializeDeviceVariables()
 	HANDLE_ERROR( cudaMalloc(&d_nodeCounts, sizeof(uint32) * MAX_BLOCKS) );
 }
 
+void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m)
+{
+	GPUNode h_node;
+	h_node.nodeIdx=0;
+	h_node.isLeaf=false;
+
+	h_node.hostTriangles=new uint32[m->numTriangles];
+	for(int i=0;i<m->numTriangles;i++)
+	{
+		h_node.hostTriangles[i]=i;
+	}
+	h_node.primBaseIdx=triangleArray.pushList(h_node.hostTriangles,m->numTriangles);
+	delete [] h_node.hostTriangles;
+
+	assert(h_node.primBaseIdx==0);
+
+	h_node.primLength=m->numTriangles;
+
+	h_node.nodeDepth=0;
+
+	gpuNodes.pushNode(&h_node);
+}
+
 uint32 countActiveNodes(uint32 numBlocks, uint32 * d_numActiveNodes, uint32 * d_nodeCounts)
 {
 	uint32 numActiveNodes;
@@ -85,28 +108,6 @@ uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
 	return 32;
 }
 
-__host__   void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m)
-{
-	GPUNode h_node;
-	h_node.nodeIdx=0;
-	h_node.isLeaf=false;
-
-	h_node.hostTriangles=new uint32[m->numTriangles];
-	for(int i=0;i<m->numTriangles;i++)
-	{
-		h_node.hostTriangles[i]=i;
-	}
-	h_node.primBaseIdx=triangleArray.pushList(h_node.hostTriangles,m->numTriangles);
-	delete [] h_node.hostTriangles;
-
-	assert(h_node.primBaseIdx==0);
-
-	h_node.primLength=m->numTriangles;
-
-	h_node.nodeDepth=0;
-
-	gpuNodes.pushNode(&h_node);
-}
 
 __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleList, 
 				uint32 * d_nodeCounts, uint32 * d_triangleCounts, uint32 * d_activeOffset,
@@ -117,7 +118,7 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 		
 	float min=FLT_MAX;
 	float max=FLT_MIN;
-return;
+
 	int checkid=3;
 
 	if(threadIdx.x==checkid)
@@ -126,7 +127,7 @@ return;
 	}
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
-	return;
+
 	GPUNode * node = gpuNodes.getNode(nodeIdx);
 	if(threadIdx.x==checkid)
 	{

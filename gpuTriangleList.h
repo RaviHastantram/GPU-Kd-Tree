@@ -9,10 +9,8 @@
 #define GPU_TRIANGLE_ARRAY_SIZE 20000
 
 
-
 struct GPUTriangleArray {
 
-public:
 	GPUTriangleArray()
 	{
 		//Allocate memory for the TriangleArray on the GPU
@@ -27,6 +25,7 @@ public:
 
 	__host__ void destroy()  {
 		HANDLE_ERROR(cudaFree(triangles));
+		l.destroy();
 	}
 
 	// NOTE:	Need to update nextAvailable if it changed on the device side.

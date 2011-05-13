@@ -19,10 +19,15 @@ using namespace std;
 
 typedef u_int64_t uint64_t;
 
+/////////////////////
+// Initialization
+/////////////////////
+void initializeDeviceVariables();
+void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m);
+
 ////////////////////
 // Tree Building
 ////////////////////
-__host__   void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m);
 __global__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleList, uint32 * d_nodeCounts,
 				 uint32 * d_triangleCounts, uint32 * d_activeOffset, Triangle * d_triangles, Point * d_points);
 __global__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleList, uint32 * d_nodeCounts,
@@ -39,7 +44,7 @@ uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles, uin
 ////////////////////
 //  Data Import/Export
 ////////////////////
-void initializeDeviceVariables();
+
 void copyToGPU(Mesh *mesh);
 void copyToHost(GPUTriangleArray gpuTriangleArray, GPUNode * h_nodeList, uint32 * h_numLeaves, GPUNode * d_nodes, uint32 numNodes);
 void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds);

@@ -12,9 +12,7 @@
 #define MAX_DEPTH 10
 
 // 20 MB
-#define GPU_NODE_ARRAY_NUM_NODES 524288
-#define GPU_NODE_SIZE 48
-#define GPU_NODE_ARRAY_SIZE GPU_NODE_ARRAY_NUM_NODES*GPU_NODE_SIZE
+#define GPU_NODE_ARRAY_NUM_NODES 50000
 
 // 48 bytes - aligned on 8 byte boundary
 struct GPUNode {
@@ -53,14 +51,15 @@ struct GPUNode {
 struct GPUNodeArray
 {
 		GPUNodeArray() {
-			HANDLE_ERROR(cudaMalloc(&nodes,GPU_NODE_ARRAY_SIZE));
-			capacity=GPU_NODE_ARRAY_SIZE;
+			HANDLE_ERROR(cudaMalloc(&nodes,GPU_NODE_ARRAY_NUM_NODES*sizeof(GPUNode)));
+			capacity=GPU_NODE_ARRAY_NUM_NODES;
 			nextAvailable=0;
 			l=Lock();
 		}
 	
-		__host__ void destroy() {
+		void destroy() {
 			HANDLE_ERROR(cudaFree(nodes));
+			l.destroy();
 		}
 
 		__device__ GPUNode * getNode(uint32 nodeIdx) {

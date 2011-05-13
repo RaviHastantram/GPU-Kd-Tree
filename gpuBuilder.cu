@@ -318,11 +318,17 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		
 		if(threadIdx.x==0)
 		{
-			for(uint32 k=1;k<blockDim.x;k++)
-			{
-				offL[k] += offL[k-1];
-				offR[k] += offR[k-1];
-				offD[k] += offD[k-1];
+			cuPrintf("blockDim.x=%d\n",blockDim.x);
+			for(int k=1;k<blockDim.x;k++)
+			{		
+				cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
+				offL[k]   =  offL[k]  +  offL[k-1];
+
+				cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
+				offR[k]  =  offR[k]  +  offR[k-1];
+				
+				cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offL[k]+offL[k-1]);
+				offD[k]  =  offD[k]  +  offD[k-1];
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
 			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];

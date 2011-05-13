@@ -327,7 +327,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 				cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
 				offR[k]  =  offR[k]  +  offR[k-1];
 				
-				cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offL[k]+offL[k-1]);
+				cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
 				offD[k]  =  offD[k]  +  offD[k-1];
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];

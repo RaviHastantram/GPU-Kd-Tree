@@ -22,15 +22,15 @@ extern uint32 * d_numTotalNodes;
 int main(int argc, char  ** argv)
 {
 	char * inputFile = argv[1];
-	//cudaPrintfInit();
+	cudaPrintfInit();
 	// load ply
 	Mesh * m = loadMeshFromPLY(inputFile);
 	
 	// copy to device
 	copyToGPU(m);
 	
-	GPUTriangleArray *d_triangleArray = new GPUTriangleArray();
-	GPUNodeArray *d_nodeArray = new GPUNodeArray();
+	GPUTriangleArray triangleArray=GPUTriangleArray();
+	GPUNodeArray nodeArray=GPUNodeArray();
 
 	int numActiveNodes=1;
 	int numActiveTriangles=m->numTriangles;
@@ -47,7 +47,9 @@ int main(int argc, char  ** argv)
 	
 	// initialize the node list
 	printf("initializeActiveNodeList\n");
-	initializeActiveNodeList(d_nodeArray,d_triangleArray,m);
+	initializeActiveNodeList(nodeArray,triangleArray,m);
+
+	CHECK_ERROR();
 
 	while(numActiveNodes>0)
 	{
@@ -62,20 +64,23 @@ int main(int argc, char  ** argv)
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
 		printf("computeCost\n");
+		CHECK_ERROR();
 		// compute the split plane and value of each node
-		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
+		computeCost <<< numActiveNodes,threadsPerNode >>>(nodeArray, triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset, 
 								d_triangles, d_points);
 		CHECK_ERROR();
-
+		cudaPrintfDisplay(stdout,true);
+		CHECK_ERROR();
+		
 		HANDLE_ERROR(cudaThreadSynchronize());
 
-		//cudaPrintfDisplay(stdout,true);
+		
 		//CHECK_ERROR();
 
 		printf("splitNodes\n");
 		// split each node according to the plane and value chosen
-		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
+		splitNodes<<<numActiveNodes,threadsPerNode>>>(nodeArray, triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset,
 								d_triangles, d_points);
 		CHECK_ERROR();
@@ -106,10 +111,14 @@ int main(int argc, char  ** argv)
 	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];
 
 	// copy out triangles out
-	copyToHost(d_triangleArray, h_gpuNodes, &numLeaves, d_nodeArray->getNodes(), numTotalNodes);
+	copyToHost(triangleArray, h_gpuNodes, &numLeaves, nodeArray.getNodes(), numTotalNodes);
 	
 	// copy triangles to disk
 	dumpKDTree(h_gpuNodes, numTotalNodes, numLeaves,  m->bounds);
-	//cudaPrintfEnd();		
+	cudaPrintfEnd();		
+
+	triangleArray.destroy();
+	nodeArray.destroy();
+
 	return 0;
 }

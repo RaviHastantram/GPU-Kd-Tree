@@ -22,10 +22,10 @@ typedef u_int64_t uint64_t;
 ////////////////////
 // Tree Building
 ////////////////////
-__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleArray *d_triangleArray, Mesh * m);
-__global__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, uint32 * d_nodeCounts,
+__host__   void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m);
+__global__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleList, uint32 * d_nodeCounts,
 				 uint32 * d_triangleCounts, uint32 * d_activeOffset, Triangle * d_triangles, Point * d_points);
-__global__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, uint32 * d_nodeCounts,
+__global__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleList, uint32 * d_nodeCounts,
 				 uint32 * d_triangleCounts, uint32 * d_activeOffset, Triangle * d_triangles, Point * d_points);
 
 uint32 getThreadsPerNode(int,int);
@@ -41,7 +41,7 @@ uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles, uin
 ////////////////////
 void initializeDeviceVariables();
 void copyToGPU(Mesh *mesh);
-void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_nodeList, uint32 * h_numLeaves, GPUNode * d_nodes, uint32 numNodes);
+void copyToHost(GPUTriangleArray gpuTriangleArray, GPUNode * h_nodeList, uint32 * h_numLeaves, GPUNode * d_nodes, uint32 numNodes);
 void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds);
 void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes);
 void dumpTriangles(ofstream& file, uint32 nodeID,GPUNode* nodes);

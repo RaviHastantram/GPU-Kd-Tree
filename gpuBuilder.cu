@@ -85,7 +85,7 @@ uint32 getThreadsPerNode(int numActiveNodes,int numActiveTriangles)
 	return 32;
 }
 
-__host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleArray *d_triangleArray, Mesh * m)
+__host__   void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m)
 {
 	GPUNode h_node;
 	h_node.nodeIdx=0;
@@ -96,7 +96,7 @@ __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleAr
 	{
 		h_node.hostTriangles[i]=i;
 	}
-	h_node.primBaseIdx=d_triangleArray->pushList(h_node.hostTriangles,m->numTriangles);
+	h_node.primBaseIdx=triangleArray.pushList(h_node.hostTriangles,m->numTriangles);
 	delete [] h_node.hostTriangles;
 
 	assert(h_node.primBaseIdx==0);
@@ -105,10 +105,10 @@ __host__   void initializeActiveNodeList(GPUNodeArray* d_gpuNodes, GPUTriangleAr
 
 	h_node.nodeDepth=0;
 
-	d_gpuNodes->pushNode(&h_node);
+	gpuNodes.pushNode(&h_node);
 }
 
-__device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, 
+__device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleList, 
 				uint32 * d_nodeCounts, uint32 * d_triangleCounts, uint32 * d_activeOffset,
 				Triangle * d_triangles, Point * d_points)
 {
@@ -117,20 +117,33 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 		
 	float min=FLT_MAX;
 	float max=FLT_MIN;
-//	cuPrintf("Msg from kernel, tid = %d\n",threadIdx.x); 
+return;
+	int checkid=3;
+
+	if(threadIdx.x==checkid)
+	{
+		cuPrintf("here 1:Msg from kernel, tid = %d\n",threadIdx.x); 
+	}
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
-	
-	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
-	
+	return;
+	GPUNode * node = gpuNodes.getNode(nodeIdx);
+	if(threadIdx.x==checkid)
+	{
+		cuPrintf("here 2:Msg from kernel, tid = %d\n",threadIdx.x); 
+	}
 	if(node->nodeDepth>MAX_DEPTH)
 	{
 		node->splitChoice=SPLIT_NONE;
 		node->isLeaf=true;
 		return;
 	}
+	if(threadIdx.x==checkid)
+	{
+		cuPrintf("here 3:Msg from kernel, tid = %d\n",threadIdx.x); 
+	}
 	
-	uint32 * triangleIDs = gpuTriangleList->getList(node->primBaseIdx);
+	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
 
 	mins[threadIdx.x]=FLT_MAX;
 	maxs[threadIdx.x]=FLT_MIN;
@@ -156,10 +169,13 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 		}
 		currIdx += blockDim.x;
 	}
-
+	if(threadIdx.x==checkid)
+	{
+		cuPrintf("here 4:Msg from kernel, tid = %d\n",threadIdx.x); 
+	}
 	__syncthreads();
 
-	if(threadIdx.x==0)
+	if(threadIdx.x==checkid)
 	{
 		for(uint32 k=0;k<blockDim.x;k++)
 		{
@@ -175,9 +191,14 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 		node->splitValue = 0.5*(min+max);
 		node->splitChoice = dim;
 	}
+	if(threadIdx.x==checkid)
+	{
+		cuPrintf("here 5:Msg from kernel, tid = %d\n",threadIdx.x); 
+		cuPrintf("splitValue=%f splitChoice=%d\n",node->splitValue,node->splitChoice);
+	}
 }
 
-__device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriangleList, uint32 * d_nodeCounts,
+__device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleList, uint32 * d_nodeCounts,
 				uint32 * d_triangleCounts, uint32 * d_activeOffset,
 				Triangle * d_triangles, Point * d_points)
 {
@@ -188,15 +209,14 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 	__shared__ uint32 * rightList;
 	__shared__ uint32 leftPrimBaseIdx;
 	__shared__ uint32 rightPrimBaseIdx;
-	return;
 	uint32 triangleChoice;
 
 	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
-	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
+	GPUNode * node = gpuNodes.getNode(nodeIdx);
 	int dim = node->splitChoice;
 	float splitValue = node->splitValue;
 	uint32 currIdx = threadIdx.x;
-	uint32 * triangleIDs = gpuTriangleList->getList(node->primBaseIdx);
+	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
 	uint32 leftBase=0, rightBase=0;
 	uint32 leftCount=0, rightCount=0;
 
@@ -213,13 +233,15 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 
 	if(threadIdx.x==0)
 	{
-		gpuTriangleList->lock();
-		leftPrimBaseIdx=gpuTriangleList->allocateList(node->primLength);
-		rightPrimBaseIdx=gpuTriangleList->allocateList(node->primLength);
-		gpuTriangleList->unlock();
+		gpuTriangleList.lock();
 
-		leftList=gpuTriangleList->getList(leftPrimBaseIdx);
-		rightList=gpuTriangleList->getList(rightPrimBaseIdx);
+		leftPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
+		rightPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
+
+		gpuTriangleList.unlock();
+
+		leftList=gpuTriangleList.getList(leftPrimBaseIdx);
+		rightList=gpuTriangleList.getList(rightPrimBaseIdx);
 	}
 	__syncthreads();
 
@@ -306,12 +328,12 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 	
 	if(threadIdx.x==0)
 	{
-		d_gpuNodes->lock();
+		gpuNodes.lock();
 
-		GPUNode* leftNode =  d_gpuNodes->allocateNode();
-		GPUNode* rightNode = d_gpuNodes->allocateNode();
+		GPUNode* leftNode =  gpuNodes.allocateNode();
+		GPUNode* rightNode = gpuNodes.allocateNode();
 
-		d_gpuNodes->unlock();
+		gpuNodes.unlock();
 
 		node->leftIdx = leftNode->nodeIdx;
 		node->rightIdx = rightNode->nodeIdx;
@@ -347,7 +369,7 @@ void copyToGPU(Mesh *mesh)
 	HANDLE_ERROR( cudaMemcpy(d_triangles,mesh->triangles,size,cudaMemcpyHostToDevice) );
 }
 
-void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, uint32 * h_numLeaves, GPUNode * d_gpuNodes, uint32 numNodes)
+void copyToHost(GPUTriangleArray gpuTriangleArray, GPUNode * h_gpuNodes, uint32 * h_numLeaves, GPUNode * d_gpuNodes, uint32 numNodes)
 {
 	// copy the nodes
 	HANDLE_ERROR( cudaMemcpy(h_gpuNodes,d_gpuNodes,sizeof(GPUNode)*numNodes,cudaMemcpyDeviceToHost) );
@@ -357,7 +379,7 @@ void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_gpuNodes, uin
 		if(node->isLeaf)
 		{
 			node->hostTriangles = new uint32[node->primLength];
-			d_gpuTriangleArray->copyList(node->hostTriangles, node->primBaseIdx, node->primLength);
+			gpuTriangleArray.copyList(node->hostTriangles, node->primBaseIdx, node->primLength);
 			*h_numLeaves++;
 		}
 	}

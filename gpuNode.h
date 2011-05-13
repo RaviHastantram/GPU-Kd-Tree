@@ -2,6 +2,7 @@
 #define __GPU_NODE_H__
 
 #include <cuda.h>
+#include "util.h"
 #include "lock.h"
 
 #define SPLIT_X 0
@@ -49,25 +50,26 @@ struct GPUNode {
 };
 
 
-class GPUNodeArray
+struct GPUNodeArray
 {
-	public:
-		__host__ GPUNodeArray() {
+		GPUNodeArray() {
+			HANDLE_ERROR(cudaMalloc(&nodes,GPU_NODE_ARRAY_SIZE));
 			capacity=GPU_NODE_ARRAY_SIZE;
 			nextAvailable=0;
-			cudaMalloc(&nodes,GPU_NODE_ARRAY_SIZE);
+			l=Lock();
 		}
 	
+		__host__ void destroy() {
+			HANDLE_ERROR(cudaFree(nodes));
+		}
+
 		__device__ GPUNode * getNode(uint32 nodeIdx) {
 			return &nodes[nodeIdx];
 		}
 			
-		/*
-		__device__ void putNode(GPUNode * node, uint32 nodeIx) {
-			cudaMemcpy(&node[nodeIdx],node,sizeof(node),cudaMemcpyDeviceToDevice);
-		}
-		*/
+
 		__device__ GPUNode * allocateNode() {
+	
 			if(capacity==nextAvailable)
 			{
 				return NULL;
@@ -91,14 +93,14 @@ class GPUNodeArray
 
 		__host__ GPUNode * getNodes() { return nodes; }
 
+		// NOTE: Only works for initialization
 		__host__ void pushNode(GPUNode * h_node)
 		{
 			GPUNode * d_next = nodes+nextAvailable;
-			cudaMemcpy(d_next,h_node,sizeof(GPUNode),cudaMemcpyHostToDevice);
+			HANDLE_ERROR(cudaMemcpy(d_next,h_node,sizeof(GPUNode),cudaMemcpyHostToDevice));
 			nextAvailable++;
 		}
 
-	private:
 		Lock l;
 		uint32 capacity;
 		uint32 nextAvailable;

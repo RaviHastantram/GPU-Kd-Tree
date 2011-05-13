@@ -152,7 +152,7 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 	maxs[threadIdx.x]=FLT_MIN;
 
 	uint32 currIdx = threadIdx.x;
-	cuPrintf("computeCost:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
+	//cuPrintf("computeCost:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
 	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
 	{
 		uint32 triangleID =  triangleIDs[currIdx];
@@ -227,6 +227,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	uint32 leftBase=0, rightBase=0;
 	uint32 leftCount=0, rightCount=0;
 	//cuPrintf("splitNodes:here\n");
+	//cuPrintf("splitNodes:dim=%d\n",node->splitChoice);
 	if(threadIdx.x==0)
 	{
 	//	cuPrintf("splitNodes:setting node counts\n");
@@ -254,9 +255,9 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		rightList=gpuTriangleList.getList(rightPrimBaseIdx);
 	}
 	__syncthreads();
-	
-	float low = FLT_MIN;
-	float high = FLT_MAX;
+	cuPrintf("tid=%d,leftPrimBaseIdx=%d,rightPrimBaseIdx=%d\n",threadIdx.x,leftPrimBaseIdx,rightPrimBaseIdx);
+	float low = FLT_MAX;
+	float high = FLT_MIN;
 	
 	//cuPrintf("splitNode:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
 	//Need to initialize the offL, offD, offR arrays 
@@ -271,7 +272,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = &d_triangles[triangleID];
-               
+	        
 		for(uint32 j=0;j<3;j++)
 		{
 			uint32 pointID = triangle->ids[j];
@@ -285,27 +286,26 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 				high=point->values[dim];
 			}
 		}
-
+	     
 		if( low < splitValue && high < splitValue )
 		{
 			offL[threadIdx.x] = 1;
 			triangleChoice=0;
 		}
-
+	        else
 		if( low >= splitValue && high >= splitValue) 
 		{
 			offR[threadIdx.x] = 1;
 			triangleChoice=1;
 		}
-
-		if( low < splitValue && high >= splitValue ) 
+		else 
 		{
 			offD[threadIdx.x] = 1;
 			triangleChoice=2;
 		}
 
 		__syncthreads();
-
+		
 		if(threadIdx.x==0)
 		{
 			for(uint32 k=1;k<blockDim.x;k++)
@@ -317,29 +317,38 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
 			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];
 		}
-
+	  
 		__syncthreads();
-
+  
+		uint32 _offL=offL[threadIdx.x]-1;
+		uint32 _offR = offR[threadIdx.x]-1;
+		uint32 tc0=leftBase+_offL;
+		uint32 tc1=rightBase+_offR;
+		uint32 tc2a=tc0+offD[threadIdx.x];
+		uint32 tc2b=tc1+offD[threadIdx.x];
+		cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b);
+		return;
+		/**
 		if(triangleChoice==0)
 		{
-			leftList[leftBase+offL[threadIdx.x]-1]=triangleID;
+			leftList[tc0]=triangleID;
 		}
 		else if(triangleChoice==1)
 		{
-			rightList[rightBase+offR[threadIdx.x]-1]=triangleID;
+			rightList[tc1]=triangleID;
 		}
 		else if(triangleChoice==2)
 		{
-			leftList[leftBase+offL[blockDim.x-1]+offD[threadIdx.x]-1]=triangleID;
-			rightList[rightBase+offR[blockDim.x-1]+offD[threadIdx.x]-1]=triangleID;
-		}
-	
+			leftList[tc2a]=triangleID;
+			rightList[tc2b]=triangleID;
+		}**/
+		
 		leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
 		rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
 
 		currIdx += blockDim.x;
 	}
-	
+	return;
 	if(threadIdx.x==0)
 	{
 		gpuNodes.lock();
@@ -348,11 +357,11 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		GPUNode* rightNode = gpuNodes.allocateNode();
 
 		gpuNodes.unlock();
-
+	      
 		node->leftIdx = leftNode->nodeIdx;
 		node->rightIdx = rightNode->nodeIdx;
-		cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
-
+		
+	
 		leftNode->primBaseIdx=leftPrimBaseIdx;
 		leftNode->primLength=leftCount;
 		leftNode->nodeDepth=node->nodeDepth+1;
@@ -360,10 +369,11 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		rightNode->primBaseIdx=rightPrimBaseIdx;
 		rightNode->primLength=rightCount;
 		rightNode->nodeDepth=node->nodeDepth+1;
-	
+	      
 		d_nodeCounts[blockIdx.x]=1;
 		d_triangleCounts[blockIdx.x]=leftCount+rightCount;
 	}
+	cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
 }
 
 ////////////////////////////////

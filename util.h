@@ -7,6 +7,7 @@ using namespace std;
 
 #include "rply.h"
 #include "geom.h"
+#include "cuPrintf.cuh"
 
 static void HandleError( cudaError_t err,
                          const char *file,
@@ -14,6 +15,8 @@ static void HandleError( cudaError_t err,
     if (err != cudaSuccess) {
         printf( "HandleError:%s in %s at line %d\n", cudaGetErrorString( err ),
                 file, line );
+	cudaPrintfEnd();
+	fflush(stdout);
         exit( EXIT_FAILURE );
     }
 }

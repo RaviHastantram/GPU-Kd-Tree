@@ -4,11 +4,10 @@
 #$ -N agrippa-GPU-Kd-Tree
 #$ -j y
 #$ -o $JOB_NAME.o$JOB_ID
-#$ -pe 8way 8
+#$ -pe 8way 16
 #$ -q development
-#$ -l h_rt=00:03:00
+#$ -l h_rt=00:05:00
 #$ -M ravi@cs.utexas.edu
 #$ -A A-cs41
 #$ -P data
 ./gpukd bun.ply
-

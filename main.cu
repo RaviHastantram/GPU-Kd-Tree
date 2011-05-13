@@ -91,7 +91,7 @@ int main(int argc, char  ** argv)
 								d_triangles, d_points);
 		CHECK_ERROR();
 		cudaPrintfDisplay(stdout,true);
-		//CHECK_ERROR();
+		CHECK_ERROR();
 
 		printf("cudaThreadSynchronize\n");
 		// force threads to synchronize globally

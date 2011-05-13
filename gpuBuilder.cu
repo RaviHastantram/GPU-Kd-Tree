@@ -226,6 +226,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	
 	uint32 leftBase=0, rightBase=0;
 	uint32 leftCount=0, rightCount=0;
+	uint32 leftOff=0,rightOff=0;
 	//cuPrintf("splitNodes:here\n");
 	//cuPrintf("splitNodes:dim=%d\n",node->splitChoice);
 	if(threadIdx.x==0)
@@ -255,7 +256,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		rightList=gpuTriangleList.getList(rightPrimBaseIdx);
 	}
 	__syncthreads();
-	cuPrintf("tid=%d,leftPrimBaseIdx=%d,rightPrimBaseIdx=%d\n",threadIdx.x,leftPrimBaseIdx,rightPrimBaseIdx);
+	//cuPrintf("tid=%d,leftPrimBaseIdx=%d,rightPrimBaseIdx=%d\n",threadIdx.x,leftPrimBaseIdx,rightPrimBaseIdx);
 	float low = FLT_MAX;
 	float high = FLT_MIN;
 	
@@ -272,11 +273,12 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = &d_triangles[triangleID];
-	        
-		for(uint32 j=0;j<3;j++)
-		{
+		Point points[3];
+	   		
+		for(uint32 j=0;j<3;j++) {
 			uint32 pointID = triangle->ids[j];
 			Point * point = &d_points[pointID];
+			points[j]=*point;
 			if(point->values[dim]<low)
 			{
 				low=point->values[dim];
@@ -286,8 +288,13 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 				high=point->values[dim];
 			}
 		}
-	     
-		if( low < splitValue && high < splitValue )
+		/**cuPrintf("triangle: (%f,%f,%f), (%f,%f,%f), (%f,%f,%f)\n",
+			    	points[0].values[0],points[0].values[1],points[0].values[2],
+				points[1].values[0],points[1].values[1],points[1].values[2],
+				points[2].values[0],points[2].values[1],points[2].values[2]);
+		**/
+		//cuPrintf("splitValue:%f,low:%f,high:%f\n",splitValue,low,high);
+		if( low <= splitValue && high <= splitValue )
 		{
 			offL[threadIdx.x] = 1;
 			triangleChoice=0;
@@ -326,9 +333,14 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		uint32 tc1=rightBase+_offR;
 		uint32 tc2a=tc0+offD[threadIdx.x];
 		uint32 tc2b=tc1+offD[threadIdx.x];
-		cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b);
-		return;
-		/**
+		cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d,L=%d,R=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b,leftOff,rightOff);
+		leftOff += offL[blockDim.x-1]+offD[blockDim.x-1];
+		rightOff += offR[blockDim.x-1]+offD[blockDim.x-1];
+		
+		if(leftBase>10000 || rightBase>10000)
+			{
+				cuPrintf("leftBase:%d,rightBase:%d\n",leftBase,rightBase);
+			} else {
 		if(triangleChoice==0)
 		{
 			leftList[tc0]=triangleID;
@@ -339,13 +351,14 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		}
 		else if(triangleChoice==2)
 		{
-			leftList[tc2a]=triangleID;
-			rightList[tc2b]=triangleID;
-		}**/
+			
+				leftList[tc2a]=triangleID;
+				rightList[tc2b]=triangleID;
+		}
 		
 		leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
 		rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
-
+		}
 		currIdx += blockDim.x;
 	}
 	return;

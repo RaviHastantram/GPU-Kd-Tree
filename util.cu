@@ -133,7 +133,7 @@ Mesh * loadMeshFromPLY(const char * filename)
     pCurrMesh->triangles = new Triangle[ntriangles];
     currTriangleIndex=0;
 
-    printf("Loaded %ld points and %ld vertices.\n", nvertices, ntriangles);
+    printf("Loaded %ld points and %ld triangles.\n", nvertices, ntriangles);
 	
     if (!ply_read(ply)) 
 	{

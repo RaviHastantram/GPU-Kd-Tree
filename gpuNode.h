@@ -11,8 +11,8 @@
 #define SPLIT_NONE 3
 #define MAX_DEPTH 10
 
-// 20 MB
-#define GPU_NODE_ARRAY_NUM_NODES 50000
+// a lot of nodes
+#define GPU_NODE_ARRAY_NUM_NODES 5000000
 
 // 48 bytes - aligned on 8 byte boundary
 struct GPUNode {

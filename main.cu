@@ -69,7 +69,7 @@ int main(int argc, char  ** argv)
 		// calculate number of threads to assign to each node
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
 		
-		printf("calling computeCost\n");
+		printf("calling computeCost(%d,%d)\n",numActiveNodes,threadsPerNode);
 		CHECK_ERROR();
 		// compute the split plane and value of each node
 		computeCost <<< numActiveNodes,threadsPerNode >>>(nodeArray, triangleArray, d_nodeCounts, 
@@ -84,7 +84,7 @@ int main(int argc, char  ** argv)
 		
 		//CHECK_ERROR();
 
-		printf("calling splitNodes\n");
+		printf("calling splitNodes (%d,%d)\n",numActiveNodes,threadsPerNode);
 		// split each node according to the plane and value chosen
 		splitNodes<<<numActiveNodes,threadsPerNode>>>(nodeArray, triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset,

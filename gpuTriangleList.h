@@ -1,5 +1,6 @@
-#ifndef __GPU_TRIANGLE_LIST_H
-#define __GPU_TRIANGLE_LIST_H
+#ifndef __GPU_TRIANGLE_LIST_H__
+#define __GPU_TRIANGLE_LIST_H__
+
 #include "kdtypes.h"
 #include "lock.h"
 

@@ -10,10 +10,19 @@
 
 using namespace std;
 
+extern Point * d_points;
+extern Triangle * d_triangles;
+extern uint32 * d_triangleCounts;
+extern uint32 * d_nodeCounts;
+extern uint32 * d_numActiveNodes;
+extern uint32 * d_numActiveTriangles;
+extern uint32 * d_activeOffset;
+extern uint32 * d_numTotalNodes;
+
 int main(int argc, char  ** argv)
 {
 	char * inputFile = argv[1];
-	cudaPrintfInit();
+	//cudaPrintfInit();
 	// load ply
 	Mesh * m = loadMeshFromPLY(inputFile);
 	
@@ -47,7 +56,7 @@ int main(int argc, char  ** argv)
 
 		printf("cudaMemcpy\n");
 		// copy offset to first active node to device
-		HANDLE_ERROR( cudaMemcpy(&d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice) );
+		HANDLE_ERROR( cudaMemcpy(d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice) );
 		
 		// calculate number of threads to assign to each node
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
@@ -59,12 +68,14 @@ int main(int argc, char  ** argv)
 								d_triangles, d_points);
 		CHECK_ERROR();
 
-		cudaPrintfDisplay(stdout,true);
-		CHECK_ERROR();
+		HANDLE_ERROR(cudaThreadSynchronize());
+
+		//cudaPrintfDisplay(stdout,true);
+		//CHECK_ERROR();
 
 		printf("splitNodes\n");
 		// split each node according to the plane and value chosen
-		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray,d_triangleArray, d_nodeCounts, 
+		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset,
 								d_triangles, d_points);
 		CHECK_ERROR();
@@ -75,7 +86,7 @@ int main(int argc, char  ** argv)
 		
 		printf("Update activeOffset\n");
 		// increment pointer to first active node
-		HANDLE_ERROR(cudaMemcpy(&activeOffset,&d_activeOffset,sizeof(uint32),cudaMemcpyDeviceToHost));
+		HANDLE_ERROR(cudaMemcpy(&activeOffset,d_activeOffset,sizeof(uint32),cudaMemcpyDeviceToHost));
 		activeOffset += numActiveNodes;
 	
 		printf("Count active nodes\n");
@@ -99,6 +110,6 @@ int main(int argc, char  ** argv)
 	
 	// copy triangles to disk
 	dumpKDTree(h_gpuNodes, numTotalNodes, numLeaves,  m->bounds);
-	cudaPrintfEnd();		
+	//cudaPrintfEnd();		
 	return 0;
 }

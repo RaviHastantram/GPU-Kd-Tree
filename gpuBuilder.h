@@ -1,10 +1,13 @@
+#ifndef __GPU_BUILDER_H__
+#define __GPU_BUILDER_H__
+
 //#include "Mesh.h"
-#include "gpuNode.h"
 #include <sys/types.h>
 #include <cuda.h>
 #include <cassert>
 #include <cstdio>
 #include <iostream>
+
 #include "gpuNode.h"
 #include "gpuTriangleList.h"
 #include "geom.h"
@@ -15,17 +18,6 @@ using namespace std;
 #define MAX_BLOCKS 32000
 
 typedef u_int64_t uint64_t;
-
-Point * d_points=0;
-Triangle * d_triangles=0;
-
-uint32 * d_triangleCounts=0;
-uint32 * d_nodeCounts=0;
-
-uint32 * d_numActiveNodes=0;
-uint32 * d_numActiveTriangles=0;
-uint32 * d_activeOffset=0;
-uint32 * d_numTotalNodes=0;
 
 ////////////////////
 // Tree Building
@@ -53,5 +45,7 @@ void copyToHost(GPUTriangleArray * d_gpuTriangleArray, GPUNode * h_nodeList, uin
 void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds);
 void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes);
 void dumpTriangles(ofstream& file, uint32 nodeID,GPUNode* nodes);
+
+#endif
 
 

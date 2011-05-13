@@ -3,14 +3,26 @@
 #include <cstdio>
 #include <cfloat>
 #include <cassert>
+
 #include "kdtypes.h"
 #include "gpuBuilder.h"
 #include "util.h"
 #include "geom.h"
 #include "cuPrintf.cu"
 
-
 using namespace std;
+
+
+Point * d_points=0;
+Triangle * d_triangles=0;
+
+uint32 * d_triangleCounts=0;
+uint32 * d_nodeCounts=0;
+
+uint32 * d_numActiveNodes=0;
+uint32 * d_numActiveTriangles=0;
+uint32 * d_activeOffset=0;
+uint32 * d_numTotalNodes=0;
 
 ///////////////////////////
 // 
@@ -18,7 +30,7 @@ using namespace std;
 //
 ///////////////////////////
 
-void intializeDeviceVariables()
+void initializeDeviceVariables()
 {
 	HANDLE_ERROR( cudaMalloc(&d_numActiveNodes, sizeof(uint32) ) );
 	HANDLE_ERROR( cudaMalloc(&d_activeOffset, sizeof(uint32) ) );
@@ -102,14 +114,15 @@ __device__ void computeCost(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTrian
 {
 	__shared__ float mins[MAX_BLOCK_SIZE];
 	__shared__ float maxs[MAX_BLOCK_SIZE];
-	
+		
 	float min=FLT_MAX;
 	float max=FLT_MIN;
-	cuPrintf("Msg from kernel, tid = %d\n",threadIdx.x); 
+//	cuPrintf("Msg from kernel, tid = %d\n",threadIdx.x); 
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
+	
 	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
-
+	
 	if(node->nodeDepth>MAX_DEPTH)
 	{
 		node->splitChoice=SPLIT_NONE;
@@ -175,7 +188,7 @@ __device__ void splitNodes(GPUNodeArray* d_gpuNodes, GPUTriangleArray* gpuTriang
 	__shared__ uint32 * rightList;
 	__shared__ uint32 leftPrimBaseIdx;
 	__shared__ uint32 rightPrimBaseIdx;
-
+	return;
 	uint32 triangleChoice;
 
 	uint32 nodeIdx = blockIdx.x + *d_activeOffset;

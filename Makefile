@@ -11,7 +11,7 @@ INCLUDE = -I$(LOCAL)/include
 LIBDIR = -L$(LOCAL)/lib
 LIBS  = 
 
-CFLAGS = -arch sm_12 -g -G
+CFLAGS = -DDEBUG -arch sm_12 -g -G
 
 .SUFFIXES: .o .cpp .cxx .cu
 
@@ -24,7 +24,7 @@ CFLAGS = -arch sm_12 -g -G
 .cu.o:
 	$(CC) $(CFLAGS) $(INCLUDE) -c -o $*.o $<
 
-ALL.O = main.o geom.o util.o rply.o gpuBuilder.o gpuTriangleList.o gpuNode.o
+ALL.O = rply.o geom.o util.o gpuNode.o gpuBuilder.o gpuTriangleList.o main.o
 
 gpukd: $(ALL.O)
 	$(CC) $(CFLAGS) -o $@ $(ALL.O) $(INCLUDE) $(LIBDIR) $(LIBS)

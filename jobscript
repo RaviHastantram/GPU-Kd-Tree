@@ -1,0 +1,14 @@
+#!/bin/bash
+#$ -V
+#$ -cwd
+#$ -N ravi-GPU-Kd-Tree.
+#$ -j y
+#$ -o $JOB_NAME.o$JOB_ID
+#$ -pe 8way 8
+#$ -q development
+#$ -l h_rt=00:03:00
+#$ -M ravi@cs.utexas.edu
+#$ -A A-cs41
+#$ -P data
+./gpukd bunny.ply
+

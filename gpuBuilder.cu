@@ -312,6 +312,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		/**
 		* Ravi:  Check these arrays.  This is strange.
 		**/
+		__syncthreads();
 		cuPrintf("BEFORE:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
 		__syncthreads();
 		

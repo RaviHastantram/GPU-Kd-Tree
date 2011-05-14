@@ -126,7 +126,13 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 	uint32 nodeIdx = blockIdx.x + d_gpuNodes->firstActive;
 	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
 	uint32 dim = node->nodeDepth % 3;
-	
+	if(nodeIdx < 0 || nodeIdx > GPU_NODE_ARRAY_NUM_NODES)
+	{
+		cuPrintf("Out of bounds, nodeIdx=%d\n",nodeIdx);
+		node->splitChoice=SPLIT_NONE;
+		node->isLeaf=true;
+		return;
+	}
 	if(threadIdx.x==0)
 	{
 		cuPrintf("nodeIdx=%d,nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",

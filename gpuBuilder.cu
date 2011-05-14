@@ -123,11 +123,10 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 		
 	float min=FLT_MAX;
 	float max=FLT_MIN;
-
-	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + d_gpuNodes->firstActive;
-
 	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
+	uint32 dim = node->nodeDepth % 3;
+	
 	if(threadIdx.x==0)
 	{
 		cuPrintf("nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
@@ -216,6 +215,7 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 	//uint32 leftOff=0,rightOff=0;
 	//cuPrintf("splitNodes:here\n");
 	//cuPrintf("splitNodes:dim=%d\n",node->splitChoice);
+	node->isActive=false;
 	if(threadIdx.x==0)
 	{
 		cuPrintf("splitNodes:nodeDepth=%d, primLength=%d\n",

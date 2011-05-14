@@ -97,13 +97,17 @@ int main(int argc, char  ** argv)
 		//CHECK_ERROR();
 		//cudaPrintfDisplay(stdout,true);
 		//CHECK_ERROR();
-		HANDLE_ERROR(cudaMemcpy(&nodeArray,d_nodeArray,sizeof(GPUNodeArray),cudaMemcpyDeviceToHost));
-		printf("Current nextAvailable:%d\n",nodeArray.nextAvailable);
 
 		printf("Count active nodes\n");
 		// calculate number of active nodes in next round and find first active node
 		numActiveNodes=countActiveNodes(d_nodeArray,d_numActiveNodes, d_nodeCounts);
-		printf("numActiveNodes=%d\n",numActiveNodes);
+		HANDLE_ERROR(cudaThreadSynchronize());
+
+		HANDLE_ERROR(cudaMemcpy(&nodeArray,d_nodeArray,sizeof(GPUNodeArray),cudaMemcpyDeviceToHost));
+		HANDLE_ERROR(cudaMemcpy(&triangleArray,d_triangleArray,sizeof(GPUTriangleArray),cudaMemcpyDeviceToHost));
+		printf("nodeArray:numActiveNodes=%d, nextAvailable=%d, firstActive=%d\n",
+			numActiveNodes,nodeArray.nextAvailable,nodeArray.firstActive);
+		printf("triangleArray:capacity=%d,nextAvailable=%d\n",triangleArray.capacity,triangleArray.nextAvailable);
 
 		// update total nodes
 		numTotalNodes += numActiveNodes;		

@@ -18,7 +18,6 @@ extern uint32 * d_triangleCounts;
 extern uint32 * d_nodeCounts;
 extern uint32 * d_numActiveNodes;
 extern uint32 * d_numActiveTriangles;
-extern uint32 * d_activeOffset;
 extern uint32 * d_numTotalNodes;
 
 int main(int argc, char  ** argv)
@@ -39,7 +38,6 @@ int main(int argc, char  ** argv)
 	int numActiveNodes=1;
 	int numActiveTriangles=m->numTriangles;
 	int threadsPerNode = 0;
-	uint32 activeOffset;
 	int numTotalNodes=1;
 	uint32 numLeaves=0;
 	uint32 currRound=0;
@@ -51,26 +49,24 @@ int main(int argc, char  ** argv)
 	
 	// initialize the node list
 	printf("initializeActiveNodeList\n");
-	initializeActiveNodeList(nodeArray,triangleArray,m);
+	initializeActiveNodeList(&nodeArray,&triangleArray,m);
 
-	GPUTriangleArray * d_nodeArray;
+	GPUNodeArray * d_nodeArray;
 	GPUTriangleArray * d_triangleArray;
 
-	HANDLE_ERROR(cudaMemcpy(&d_nodeArray,&nodeArray,sizeof(GPUNodeArray)));
-	HANDLE_ERROR(cudaMemcpy(&d_triangleArray,&triangleArray,sizeof(GPUTriangleArray)));
+	HANDLE_ERROR(cudaMalloc(&d_nodeArray,sizeof(GPUNodeArray)));
+	HANDLE_ERROR(cudaMalloc(&d_triangleArray,sizeof(GPUTriangleArray)));
+	HANDLE_ERROR(cudaMemcpy(d_nodeArray,&nodeArray,sizeof(GPUNodeArray),cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(d_triangleArray,&triangleArray,sizeof(GPUTriangleArray),cudaMemcpyHostToDevice));
 
 	CHECK_ERROR();
 
-	while(currIteration <3 && numActiveNodes>0)
+	while(currIteration <MAX_DEPTH && numActiveNodes>0)
 	{
 		currIteration++;
 
 		printf("Current round:%d\n",currRound);
 		currRound++;
-
-		printf("calling cudaMemcpy\n");
-		// copy offset to first active node to device
-		HANDLE_ERROR( cudaMemcpy(d_activeOffset,&activeOffset,sizeof(uint32),cudaMemcpyHostToDevice) );
 		
 		// calculate number of threads to assign to each node
 		threadsPerNode = getThreadsPerNode(numActiveNodes,numActiveTriangles);
@@ -79,11 +75,8 @@ int main(int argc, char  ** argv)
 		CHECK_ERROR();
 		// compute the split plane and value of each node
 		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
-								d_triangleCounts, d_activeOffset, 
-								d_triangles, d_points);
-		//CHECK_ERROR();
-		//cudaPrintfDisplay(stdout,true);
-		//CHECK_ERROR();
+								d_triangleCounts, d_triangles, d_points);
+	
 		
 		HANDLE_ERROR(cudaThreadSynchronize());
 		
@@ -92,23 +85,24 @@ int main(int argc, char  ** argv)
 
 		printf("calling splitNodes (%d,%d)\n",numActiveNodes,threadsPerNode);
 		// split each node according to the plane and value chosen
-		splitNodes<<<numActiveNodes,threadsPerNode>>>(nodeArray, triangleArray, d_nodeCounts, 
-								d_triangleCounts, d_activeOffset,
-								d_triangles, d_points);
+		splitNodes<<<numActiveNodes,threadsPerNode>>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
+								d_triangleCounts, d_triangles, d_points);
 		CHECK_ERROR();
 		
 		printf("cudaThreadSynchronize\n");
 		// force threads to synchronize globally
 		HANDLE_ERROR(cudaThreadSynchronize());
-		
-		printf("Update activeOffset\n");
-		// increment pointer to first active node
-		HANDLE_ERROR(cudaMemcpy(&activeOffset,d_activeOffset,sizeof(uint32),cudaMemcpyDeviceToHost));
-		activeOffset += numActiveNodes;
-	
+
+		// status check
+		//CHECK_ERROR();
+		//cudaPrintfDisplay(stdout,true);
+		//CHECK_ERROR();
+		HANDLE_ERROR(cudaMemcpy(&nodeArray,d_nodeArray,sizeof(GPUNodeArray),cudaMemcpyDeviceToHost));
+		printf("Current nextAvailable:%d\n",nodeArray.nextAvailable);
+
 		printf("Count active nodes\n");
-		// calculate number of active nodes in next round		
-		numActiveNodes=countActiveNodes(numActiveNodes,d_numActiveNodes, d_nodeCounts);
+		// calculate number of active nodes in next round and find first active node
+		numActiveNodes=countActiveNodes(d_nodeArray,d_numActiveNodes, d_nodeCounts);
 		printf("numActiveNodes=%d\n",numActiveNodes);
 
 		// update total nodes
@@ -116,10 +110,9 @@ int main(int argc, char  ** argv)
 	
 		printf("Count active triangles\n");
 		// calculate number of triangles in next round
-		numActiveTriangles=countActiveTriangles(numActiveNodes,d_numActiveTriangles, d_triangleCounts);		
+		numActiveTriangles=countActiveTriangles(d_nodeArray,d_numActiveTriangles, d_triangleCounts);			
 	}
-	cudaPrintfDisplay(stdout,true);
-	CHECK_ERROR();
+	
 	// allocate host storage for nodes
 	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];
 

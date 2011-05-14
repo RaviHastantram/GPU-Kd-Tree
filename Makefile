@@ -11,7 +11,7 @@ INCLUDE = -I$(LOCAL)/include
 LIBDIR = -L$(LOCAL)/lib
 LIBS  = 
 
-CFLAGS = -DDEBUG -arch sm_12 -g -G
+CFLAGS = -DDEBUG -arch sm_13 -g -G
 
 .SUFFIXES: .o .cpp .cxx .cu
 

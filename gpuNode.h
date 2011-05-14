@@ -12,7 +12,7 @@
 #define MAX_DEPTH 10
 
 // a lot of nodes
-#define GPU_NODE_ARRAY_NUM_NODES 5000000
+#define GPU_NODE_ARRAY_NUM_NODES 1000000
 
 // 48 bytes - aligned on 8 byte boundary
 struct GPUNode {
@@ -20,6 +20,7 @@ struct GPUNode {
 	uint32 nodeIdx; // 4
 
 	bool isLeaf; // 1 
+	bool isActive; // 1
 
 	// If internal, ID of left and right children
 	uint32 leftIdx; // 4
@@ -44,7 +45,7 @@ struct GPUNode {
 	
 	uint32 nodeDepth; // 4
 
-	bool padding[7];
+	bool padding[6];
 };
 
 
@@ -54,6 +55,7 @@ struct GPUNodeArray
 			HANDLE_ERROR(cudaMalloc(&nodes,GPU_NODE_ARRAY_NUM_NODES*sizeof(GPUNode)));
 			capacity=GPU_NODE_ARRAY_NUM_NODES;
 			nextAvailable=0;
+			firstActive=0;
 			l=Lock();
 		}
 	
@@ -95,14 +97,18 @@ struct GPUNodeArray
 		// NOTE: Only works for initialization
 		__host__ void pushNode(GPUNode * h_node)
 		{
-			GPUNode * d_next = nodes+nextAvailable;
-			HANDLE_ERROR(cudaMemcpy(d_next,h_node,sizeof(GPUNode),cudaMemcpyHostToDevice));
-			nextAvailable++;
+			printf("copy:h_node->primLength=%d, nextAvailable=%d,\n",h_node->primLength,nextAvailable);
+			GPUNode check;
+			HANDLE_ERROR(cudaMemcpy(nodes,h_node,sizeof(GPUNode),cudaMemcpyHostToDevice));
+			HANDLE_ERROR(cudaMemcpy(&check,nodes,sizeof(GPUNode),cudaMemcpyDeviceToHost));
+			printf("check:check.primLength=%d\n",check.primLength);
+			nextAvailable=1;
 		}
 
 		Lock l;
 		uint32 capacity;
 		uint32 nextAvailable;
+		uint32 firstActive;
 		GPUNode *nodes;
 };
 

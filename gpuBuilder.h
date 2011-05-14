@@ -23,22 +23,22 @@ typedef u_int64_t uint64_t;
 // Initialization
 /////////////////////
 void initializeDeviceVariables();
-void initializeActiveNodeList(GPUNodeArray gpuNodes, GPUTriangleArray triangleArray, Mesh * m);
+void initializeActiveNodeList(GPUNodeArray * gpuNodes, GPUTriangleArray * triangleArray, Mesh * m);
 
 ////////////////////
 // Tree Building
 ////////////////////
-__global__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleList, uint32 * d_nodeCounts,
-				 uint32 * d_triangleCounts, uint32 * d_activeOffset, Triangle * d_triangles, Point * d_points);
-__global__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleList, uint32 * d_nodeCounts,
-				 uint32 * d_triangleCounts, uint32 * d_activeOffset, Triangle * d_triangles, Point * d_points);
+__global__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuTriangleList, uint32 * d_nodeCounts,
+				 uint32 * d_triangleCounts, Triangle * d_triangles, Point * d_points);
+__global__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuTriangleList, uint32 * d_nodeCounts,
+				 uint32 * d_triangleCounts, Triangle * d_triangles, Point * d_points);
 
 uint32 getThreadsPerNode(int,int);
 
-__global__ void countActiveNodesKernel(uint32 numBlocks, uint32 * d_numActiveNodes, uint32 * d_nodeCounts);
-__global__ void countActiveTrianglesKernel(uint32 numBlocks, uint32 * d_numActiveTriangles, uint32 * d_triangleCounts);
-uint32 countActiveNodes(uint32 numBlocks, uint32 * d_numActiveNodes, uint32 * d_nodeCounts);
-uint32 countActiveTriangles(uint32 numBlocks, uint32 * d_numActiveTriangles, uint32 * d_triangleCounts);
+__global__ void countActiveNodesKernel(GPUNodeArray * d_gpuNodes, uint32 * d_numActiveNodes, uint32 * d_nodeCounts);
+__global__ void countActiveTrianglesKernel(GPUNodeArray * d_gpuNodes, uint32 * d_numActiveTriangles, uint32 * d_triangleCounts);
+uint32 countActiveNodes(GPUNodeArray * d_gpuNodes, uint32 * d_numActiveNodes, uint32 * d_nodeCounts);
+uint32 countActiveTriangles(GPUNodeArray * d_gpuNodes, uint32 * d_numActiveTriangles, uint32 * d_triangleCounts);
 
 
 ////////////////////

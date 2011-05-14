@@ -97,7 +97,7 @@ struct GPUNodeArray
 		// NOTE: Only works for initialization
 		__host__ void pushNode(GPUNode * h_node)
 		{
-			printf("copy:h_node->primLength=%d, nextAvailable=%d,\n",h_node->primLength,nextAvailable);
+			printf("copy:h_node->primLength=%d, nextAvailable=%d,firstActive=%d\n",h_node->primLength,nextAvailable,firstActive);
 			GPUNode check;
 			HANDLE_ERROR(cudaMemcpy(nodes,h_node,sizeof(GPUNode),cudaMemcpyHostToDevice));
 			HANDLE_ERROR(cudaMemcpy(&check,nodes,sizeof(GPUNode),cudaMemcpyDeviceToHost));

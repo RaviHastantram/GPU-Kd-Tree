@@ -76,8 +76,10 @@ int main(int argc, char  ** argv)
 		// compute the split plane and value of each node
 		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_triangles, d_points);
-	
 		
+		CHECK_ERROR();
+		cudaPrintfDisplay(stdout,true);
+		CHECK_ERROR();
 		HANDLE_ERROR(cudaThreadSynchronize());
 		
 		

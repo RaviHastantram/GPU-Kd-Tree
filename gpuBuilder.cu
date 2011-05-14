@@ -129,8 +129,8 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 	
 	if(threadIdx.x==0)
 	{
-		cuPrintf("nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
-			node->nodeDepth, node->primLength, MIN_NODES,d_gpuNodes->firstActive);
+		cuPrintf("nodeIdx=%d,nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
+			nodeIdx,node->nodeDepth, node->primLength, MIN_NODES,d_gpuNodes->firstActive);
 	}
 	if(node->nodeDepth>MAX_DEPTH   || node->primLength <= MIN_NODES)
 	{
@@ -143,10 +143,10 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 
 	mins[threadIdx.x]=FLT_MAX;
 	maxs[threadIdx.x]=FLT_MIN;
-	__syncthreads();
+	
 	uint32 currIdx = threadIdx.x;
-	//cuPrintf("computeCost:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
-	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
+	__syncthreads();
+	while(currIdx<node->primLength)
 	{
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = &d_triangles[triangleID];
@@ -184,7 +184,7 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 		node->splitValue = 0.5*(min+max);
 		node->splitChoice = dim;
 
-		cuPrintf("splitValue=%f splitChoice=%d\n",node->splitValue,node->splitChoice);
+		cuPrintf("min=%f,max=%f,splitValue=%f splitChoice=%d\n",min,max,node->splitValue,node->splitChoice);
 	}
 }
 
@@ -215,9 +215,10 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 	//uint32 leftOff=0,rightOff=0;
 	//cuPrintf("splitNodes:here\n");
 	//cuPrintf("splitNodes:dim=%d\n",node->splitChoice);
-	node->isActive=false;
+	
 	if(threadIdx.x==0)
 	{
+		node->isActive=false;
 		cuPrintf("splitNodes:nodeDepth=%d, primLength=%d\n",
 			node->nodeDepth, node->primLength);
 	//	cuPrintf("splitNodes:setting node counts\n");
@@ -226,6 +227,7 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 		d_triangleCounts[blockIdx.x]=0;
 	//	cuPrintf("splitNodes:should be ready for splitting now\n");
 	}
+	__syncthreads();
 	//cuPrintf("splitNodes:isLeaf=%d\n",(int)node->isLeaf);
 	if(node->isLeaf)
 	{

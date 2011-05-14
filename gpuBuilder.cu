@@ -121,29 +121,16 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 	float min=FLT_MAX;
 	float max=FLT_MIN;
 
-	int checkid=3;
-
-	if(threadIdx.x==checkid)
-	{
-		cuPrintf("here 1:Msg from kernel, tid = %d\n",threadIdx.x); 
-	}
 	uint32 dim = blockIdx.x % 3;
 	uint32 nodeIdx = blockIdx.x + *d_activeOffset;
 
 	GPUNode * node = gpuNodes.getNode(nodeIdx);
-	if(threadIdx.x==checkid)
-	{
-		cuPrintf("here 2:Msg from kernel, tid = %d\n",threadIdx.x); 
-	}
+	
 	if(node->nodeDepth>MAX_DEPTH)
 	{
 		node->splitChoice=SPLIT_NONE;
 		node->isLeaf=true;
 		return;
-	}
-	if(threadIdx.x==checkid)
-	{
-		cuPrintf("here 3:Msg from kernel, tid = %d\n",threadIdx.x); 
 	}
 	
 	uint32 * triangleIDs = gpuTriangleList.getList(node->primBaseIdx);
@@ -172,13 +159,10 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 		}
 		currIdx += blockDim.x;
 	}
-	if(threadIdx.x==checkid)
-	{
-		cuPrintf("here 4:Msg from kernel, tid = %d\n",threadIdx.x); 
-	}
+	
 	__syncthreads();
 
-	if(threadIdx.x==checkid)
+	if(threadIdx.x==0)
 	{
 		for(uint32 k=0;k<blockDim.x;k++)
 		{
@@ -193,10 +177,7 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 		}
 		node->splitValue = 0.5*(min+max);
 		node->splitChoice = dim;
-	}
-	if(threadIdx.x==checkid)
-	{
-		cuPrintf("here 5:Msg from kernel, tid = %d\n",threadIdx.x); 
+
 		cuPrintf("splitValue=%f splitChoice=%d\n",node->splitValue,node->splitChoice);
 	}
 }
@@ -260,7 +241,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	float low = FLT_MAX;
 	float high = FLT_MIN;
 	
-	cuPrintf("splitNode:tid=%d, primLength=%d,blockDim.x=%d\n",threadIdx.x,node->primLength,blockDim.x);
+	//cuPrintf("splitNode:tid=%d, primLength=%d,blockDim.x=%d\n",threadIdx.x,node->primLength,blockDim.x);
 	//Need to initialize the offL, offD, offR arrays 
 	
 	int lowestIdx=0;
@@ -320,13 +301,13 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		{
 			for(int k=1;k<blockDim.x;k++)
 			{		
-				cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
+				//cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
 				offL[k]   =  offL[k]  +  offL[k-1];
 
-				cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
+				//cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
 				offR[k]  =  offR[k]  +  offR[k-1];
 				
-				cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
+				//cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
 				offD[k]  =  offD[k]  +  offD[k-1];
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];

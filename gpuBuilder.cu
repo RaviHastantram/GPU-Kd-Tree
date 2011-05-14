@@ -226,7 +226,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	
 	uint32 leftBase=0, rightBase=0;
 	uint32 leftCount=0, rightCount=0;
-	uint32 leftOff=0,rightOff=0;
+	//uint32 leftOff=0,rightOff=0;
 	//cuPrintf("splitNodes:here\n");
 	//cuPrintf("splitNodes:dim=%d\n",node->splitChoice);
 	if(threadIdx.x==0)
@@ -262,126 +262,124 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	
 	cuPrintf("splitNode:tid=%d, primLength=%d,blockDim.x=%d\n",threadIdx.x,node->primLength,blockDim.x);
 	//Need to initialize the offL, offD, offR arrays 
-	int lim=node->primLength;
 	
-	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
+	int lowestIdx=0;
+	// Use lowestIdx to ensure all threads stay in this while loop until every thread finishes
+	while(lowestIdx<node->primLength)
 	{
-		//Explicitly initialize the values to zero.
-		if(threadIdx.x == 0)
-		{
-			for(int k = 0; k < blockDim.x; k++)
-			{
-				offL[k]=0;
-				offR[k]=0;
-				offD[k]=0;
-			}
-		}
+		offL[threadIdx.x]=0;
+		offR[threadIdx.x]=0;
+		offD[threadIdx.x]=0;
+
 		__syncthreads();
+
 		uint32 triangleID =  triangleIDs[currIdx];
 		Triangle * triangle = &d_triangles[triangleID];
-		Point points[3];
-	   		
-		for(uint32 j=0;j<3;j++) {
-			uint32 pointID = triangle->ids[j];
-			Point * point = &d_points[pointID];
-			points[j]=*point;
-			if(point->values[dim]<low)
-			{
-				low=point->values[dim];
+				   		
+		// only threads with a valid currIdx get to participate in the computation
+		if(currIdx<node->primLength)
+		{
+			for(uint32 j=0;j<3;j++) {
+				uint32 pointID = triangle->ids[j];
+				Point * point = &d_points[pointID];
+				if(point->values[dim]<low)
+				{
+					low=point->values[dim];
+				}
+				if(point->values[dim]>high)
+				{
+					high=point->values[dim];
+				}
 			}
-			if(point->values[dim]>high)
-			{
-				high=point->values[dim];
-			}
-		}
-		/**cuPrintf("triangle: (%f,%f,%f), (%f,%f,%f), (%f,%f,%f)\n",
-			    	points[0].values[0],points[0].values[1],points[0].values[2],
-				points[1].values[0],points[1].values[1],points[1].values[2],
-				points[2].values[0],points[2].values[1],points[2].values[2]);
-		**/
-		//cuPrintf("splitValue:%f,low:%f,high:%f\n",splitValue,low,high);
-		if( low <= splitValue && high <= splitValue )
-		{
-			offL[threadIdx.x] = 1;
-			triangleChoice=0;
-		}
-	        else
-		if( low >= splitValue && high >= splitValue) 
-		{
-			offR[threadIdx.x] = 1;
-			triangleChoice=1;
-		}
-		else 
-		{
-			offD[threadIdx.x] = 1;
-			triangleChoice=2;
-		}
-		/**
-		* Ravi:  Check these arrays.  This is strange.
 		
+			//cuPrintf("splitValue:%f,low:%f,high:%f\n",splitValue,low,high);
+			if( low <= splitValue && high <= splitValue )
+			{
+				offL[threadIdx.x] = 1;
+				triangleChoice=0;
+			}
+		        else
+			if( low >= splitValue && high >= splitValue) 
+			{
+				offR[threadIdx.x] = 1;
+				triangleChoice=1;
+			}
+			else 
+			{
+				offD[threadIdx.x] = 1;
+				triangleChoice=2;
+			}
+		}
+		
+		// sync threads here
 		__syncthreads();
 		cuPrintf("BEFORE:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
 		__syncthreads();
-		**/
+	
 		if(threadIdx.x==0)
 		{
-			cuPrintf("blockDim.x=%d\n",blockDim.x);
 			for(int k=1;k<blockDim.x;k++)
 			{		
-				//cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
+				cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
 				offL[k]   =  offL[k]  +  offL[k-1];
 
-				//cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
+				cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
 				offR[k]  =  offR[k]  +  offR[k-1];
 				
-				//cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
+				cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
 				offD[k]  =  offD[k]  +  offD[k-1];
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
 			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];
-			cuPrintf("leftCount = %d, rightCount = %d,offL = %d, offD = %d, offR = %d\n",leftCount,rightCount,offL[blockDim.x-1],offD[blockDim.x-1],offR[blockDim.x-1]);
+			cuPrintf("leftCount = %d, rightCount = %d,offL = %d, offD = %d, offR = %d\n",
+				leftCount,rightCount,offL[blockDim.x-1],offD[blockDim.x-1],offR[blockDim.x-1]);
 		}
 	  
 		__syncthreads();
-  		//cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
-		uint32 _offL=offL[threadIdx.x]-1;
-		uint32 _offR = offR[threadIdx.x]-1;
-		uint32 tc0=leftBase+_offL;
-		uint32 tc1=rightBase+_offR;
-		uint32 tc2a=tc0+offD[threadIdx.x];
-		uint32 tc2b=tc1+offD[threadIdx.x];
-		//cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d,L=%d,R=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b,leftOff,rightOff);
-		leftOff += offL[blockDim.x-1]+offD[blockDim.x-1];
-		rightOff += offR[blockDim.x-1]+offD[blockDim.x-1];
-		/***
-		* Ravi: 	 At some point the offsets leftBase and rightBase will run out of bounds of the
-		*		array allocated for triangle ids
-		*
-		* 		offL,offR,offD arrays are wrong for some reason
-		**/	
-		if(leftBase>10000 || rightBase>10000)
+		cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
+		__syncthreads();
+	
+		// use an if statement to ensure only valid threads participate
+		if(currIdx < node->primLength) 
+		{
+
+			uint32 _offL=offL[threadIdx.x]-1;
+			uint32 _offR = offR[threadIdx.x]-1;
+			uint32 tc0=leftBase+_offL;
+			uint32 tc1=rightBase+_offR;
+			uint32 tc2a=tc0+offD[threadIdx.x];
+			uint32 tc2b=tc1+offD[threadIdx.x];
+
+			//cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d,L=%d,R=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b,leftOff,rightOff);
+		
+			if(leftBase>10000 || rightBase>10000)
 			{
-			//	cuPrintf("leftBase:%d,rightBase:%d,blockDim.x=%d,currIdx:%d\n",leftBase,rightBase,blockDim.x,currIdx);
-			} else {
-		if(triangleChoice==0)
-		{
-			leftList[tc0]=triangleID;
+				//	cuPrintf("leftBase:%d,rightBase:%d,blockDim.x=%d,currIdx:%d\n",leftBase,rightBase,blockDim.x,currIdx);
+			} 
+			else 
+			{
+				if(triangleChoice==0)
+				{
+					leftList[tc0]=triangleID;
+				}
+				else if(triangleChoice==1)
+				{
+					rightList[tc1]=triangleID;
+				}
+				else if(triangleChoice==2)
+				{	
+					leftList[tc2a]=triangleID;
+					rightList[tc2b]=triangleID;
+				}
+
+				//cuPrintf("offL:%d, offR:%d, offD:%d\n",offL[blockDim.x-1],offR[blockDim.x-1],offD[blockDim.x-1]);
+				leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
+				rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
+			}
 		}
-		else if(triangleChoice==1)
-		{
-			rightList[tc1]=triangleID;
-		}
-		else if(triangleChoice==2)
-		{
-			
-				leftList[tc2a]=triangleID;
-				rightList[tc2b]=triangleID;
-		}
-		//cuPrintf("offL:%d, offR:%d, offD:%d\n",offL[blockDim.x-1],offR[blockDim.x-1],offD[blockDim.x-1]);
-		leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
-		rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
-		}
+
 		currIdx += blockDim.x;
+		lowestIdx += blockDim.x;
 	}
 	
 	if(threadIdx.x==0)

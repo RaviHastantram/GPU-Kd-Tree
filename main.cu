@@ -55,7 +55,7 @@ int main(int argc, char  ** argv)
 
 	CHECK_ERROR();
 
-	while(currIteration < MAX_ITERATIONS && numActiveNodes>0)
+	while(currIteration <30 && numActiveNodes>0)
 	{
 		currIteration++;
 

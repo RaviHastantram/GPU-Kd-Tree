@@ -61,7 +61,7 @@ int main(int argc, char  ** argv)
 
 	CHECK_ERROR();
 
-	while(currIteration <MAX_DEPTH && numActiveNodes>0)
+	while(currIteration <=MAX_DEPTH+1 && numActiveNodes>0)
 	{
 		currIteration++;
 

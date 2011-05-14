@@ -6,7 +6,7 @@
 #include "lock.h"
 
 //a lot of triangles.
-#define GPU_TRIANGLE_ARRAY_SIZE 2000000
+#define GPU_TRIANGLE_ARRAY_SIZE 5000000
 
 struct GPUTriangleArray {
 

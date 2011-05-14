@@ -134,11 +134,12 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 
 	if(threadIdx.x==0)
 	{
-		cuPrintf("computeCost:nodeIdx=%d,nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
-			nodeIdx,node->nodeDepth, node->primLength, MIN_NODES,d_gpuNodes->firstActive);
+		//cuPrintf("computeCost:nodeIdx=%d,nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
+		//	nodeIdx,node->nodeDepth, node->primLength, MIN_NODES,d_gpuNodes->firstActive);
 	}
-	if(node->nodeDepth>MAX_DEPTH   || node->primLength <= MIN_NODES)
+	if(node->nodeDepth>=MAX_DEPTH   || node->primLength <= MIN_NODES)
 	{
+		cuPrintf("computeCost:making leaf, depth=%d, primLength=%d\n",node->nodeDepth,node->primLength);
 		node->splitChoice=SPLIT_NONE;
 		node->isLeaf=true;
 		return;
@@ -211,7 +212,7 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 		node->splitValue = 0.5*(min+max);
 		node->splitChoice = dim;
 
-		cuPrintf("min=%f,max=%f,splitValue=%f splitChoice=%d\n",min,max,node->splitValue,node->splitChoice);
+		//cuPrintf("min=%f,max=%f,splitValue=%f splitChoice=%d\n",min,max,node->splitValue,node->splitChoice);
 	}
 }
 
@@ -246,8 +247,8 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 	if(threadIdx.x==0)
 	{
 		node->isActive=false;
-		cuPrintf("splitNodes:nodeDepth=%d, primLength=%d\n",
-			node->nodeDepth, node->primLength);
+		//cuPrintf("splitNodes:nodeDepth=%d, primLength=%d\n",
+		//	node->nodeDepth, node->primLength);
 	//	cuPrintf("splitNodes:setting node counts\n");
 		d_nodeCounts[blockIdx.x]=0;
 	//	cuPrintf("splitNodes:setting triangle counts\n");
@@ -273,16 +274,13 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 		leftList=d_gpuTriangleList->getList(leftPrimBaseIdx);
 		rightList=d_gpuTriangleList->getList(rightPrimBaseIdx);
 		
-		cuPrintf("splitNode:leftPrimBaseIdx=%d, rightPrimBaseIdx=%d, node->nodeIdx=%d\n",
-			leftPrimBaseIdx, rightPrimBaseIdx, node->nodeIdx);
+		//cuPrintf("splitNode:leftPrimBaseIdx=%d, rightPrimBaseIdx=%d, node->nodeIdx=%d\n",
+		//	leftPrimBaseIdx, rightPrimBaseIdx, node->nodeIdx);
 	}
 	__syncthreads();
 	//cuPrintf("tid=%d,leftPrimBaseIdx=%d,rightPrimBaseIdx=%d\n",threadIdx.x,leftPrimBaseIdx,rightPrimBaseIdx);
 	float low = FLT_MAX;
 	float high = FLT_MIN;
-	
-	//cuPrintf("splitNode:tid=%d, primLength=%d,blockDim.x=%d\n",threadIdx.x,node->primLength,blockDim.x);
-	//Need to initialize the offL, offD, offR arrays 
 	
 	int lowestIdx=0;
 	// Use lowestIdx to ensure all threads stay in this while loop until every thread finishes
@@ -293,13 +291,18 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 		offD[threadIdx.x]=0;
 
 		__syncthreads();
-
-		uint32 triangleID =  triangleIDs[currIdx];
-		Triangle * triangle = &d_triangles[triangleID];
+				
+		uint32 triangleID=triangleIDs[currIdx];
+		Triangle * triangle=&d_triangles[triangleID];
 				   		
 		// only threads with a valid currIdx get to participate in the computation
 		if(currIdx<node->primLength)
-		{
+		{	
+
+			if(triangleID>947)
+			{
+				cuPrintf("splitNodes:triangleID out of bounds, triangleID=%d, currIdx=%d\n",triangleID,currIdx);
+			}
 			for(uint32 j=0;j<3;j++) {
 				uint32 pointID = triangle->ids[j];
 				Point * point = &d_points[pointID];
@@ -334,73 +337,61 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 		
 		// sync threads here
 		__syncthreads();
-		//cuPrintf("BEFORE:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
-		//__syncthreads();
-	
+
 		if(threadIdx.x==0)
 		{
 			for(int k=1;k<blockDim.x;k++)
 			{		
-				//cuPrintf("offL:%d+%d=%d\n",offL[k-1],offL[k],offL[k]+offL[k-1]);
-				offL[k]   =  offL[k]  +  offL[k-1];
-
-				//cuPrintf("offR:%d+%d=%d\n",offR[k-1],offR[k],offR[k]+offR[k-1]);
-				offR[k]  =  offR[k]  +  offR[k-1];
-				
-				//cuPrintf("offD:%d+%d=%d\n",offD[k-1],offD[k],offD[k]+offD[k-1]);
-				offD[k]  =  offD[k]  +  offD[k-1];
+				offL[k]   += offL[k-1];				
+				offR[k]  += offR[k-1];
+				offD[k]  += offD[k-1];
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
 			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];
-			//cuPrintf("leftCount = %d, rightCount = %d,offL = %d, offD = %d, offR = %d\n",
-			//	leftCount,rightCount,offL[blockDim.x-1],offD[blockDim.x-1],offR[blockDim.x-1]);
+			//cuPrintf("splitNodes:leftBase=%d, leftIncrement=%d\n",leftBase, offL[blockDim.x-1]+offD[blockDim.x-1]);
+			//cuPrintf("splitNodes:rightBase=%d, rightIncrement=%d\n",rightBase, offR[blockDim.x-1]+offD[blockDim.x-1]);
 		}
 	  
 		__syncthreads();
-		//cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
-		//__syncthreads();
 	
 		// use an if statement to ensure only valid threads participate
 		if(currIdx < node->primLength) 
 		{
-
-			uint32 _offL=offL[threadIdx.x]-1;
-			uint32 _offR = offR[threadIdx.x]-1;
-			uint32 tc0=leftBase+_offL;
-			uint32 tc1=rightBase+_offR;
-			uint32 tc2a=tc0+offD[threadIdx.x];
-			uint32 tc2b=tc1+offD[threadIdx.x];
-
-			//cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d,L=%d,R=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b,leftOff,rightOff);
-		
-			//if(leftBase>10000 || rightBase>10000)
-			//{
-			//	//	cuPrintf("leftBase:%d,rightBase:%d,blockDim.x=%d,currIdx:%d\n",leftBase,rightBase,blockDim.x,currIdx);
-			//} 
-			//else 
-			//{
+				if(triangleID>947)
+				{
+					cuPrintf("splitNodes:triangleID out of bounds, triangleID=%d, currIdx=%d,threadIdx.x=%d\n",
+							triangleID,currIdx,threadIdx.x);
+				}
 				if(triangleChoice==0)
 				{
-					leftList[tc0]=triangleID;
+					uint32 leftDestIndex = leftBase+offL[threadIdx.x]-1;	
+					leftList[leftDestIndex]=triangleID;
+					//cuPrintf("splitNodes:wrote %d to left node at %d\n",leftDestIndex,triangleID);
 				}
 				else if(triangleChoice==1)
 				{
-					rightList[tc1]=triangleID;
+					uint32 rightDestIndex = rightBase+offR[threadIdx.x]-1;
+					rightList[rightDestIndex]=triangleID;
+					//cuPrintf("splitNodes:wrote %d to right node at %d\n",rightDestIndex,triangleID);
 				}
 				else if(triangleChoice==2)
 				{	
-					leftList[tc2a]=triangleID;
-					rightList[tc2b]=triangleID;
+					uint32 leftDestIndex = leftBase+offL[blockDim.x-1]+offD[threadIdx.x]-1;
+					uint32 rightDestIndex = rightBase+offR[blockDim.x-1]+offD[threadIdx.x]-1;
+					leftList[leftDestIndex]=triangleID;
+					rightList[rightDestIndex]=triangleID;
+					//cuPrintf("splitNodes:wrote %d to left and right nodes at %d and %d\n",
+					//	triangleID,leftDestIndex,rightDestIndex);
 				}
-
-				//cuPrintf("offL:%d, offR:%d, offD:%d\n",offL[blockDim.x-1],offR[blockDim.x-1],offD[blockDim.x-1]);
+				
 				leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
 				rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
-			//}
 		}
 
 		currIdx += blockDim.x;
 		lowestIdx += blockDim.x;
+		
+		__syncthreads();
 	}
 	
 	if(threadIdx.x==0)
@@ -420,17 +411,37 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 		leftNode->primLength=leftCount;
 		leftNode->nodeDepth=node->nodeDepth+1;
 		leftNode->isActive=true;
-		
+		leftNode->isLeaf=false;
+
+		for(int i=0;i<leftCount;i++)
+		{
+			if(leftList[i] > 947)
+			{
+				cuPrintf("splitNodes: bad triangleID (%d) at index %d\n",leftList[i],i);
+				break;
+			}
+		}
+
 		rightNode->primBaseIdx=rightPrimBaseIdx;
 		rightNode->primLength=rightCount;
 		rightNode->nodeDepth=node->nodeDepth+1;
 		rightNode->isActive=true;
+		rightNode->isLeaf=false;
 	      
+		for(int i=0;i<rightCount;i++)
+		{
+			if(rightList[i] > 947)
+			{
+				cuPrintf("splitNodes: bad triangleID (%d) at index %d\n",rightList[i],i);
+				break;
+			}
+		}
+
 		d_nodeCounts[blockIdx.x]=1;
 		d_triangleCounts[blockIdx.x]=leftCount+rightCount;
-		cuPrintf("splitNode:leftPrimBaseIdx:%d, leftCount:%d\n",leftPrimBaseIdx,leftCount);
-		cuPrintf("splitNode:rightPrimBaseIdx:%d, rightCount:%d\n",rightPrimBaseIdx,rightCount);
-		cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
+		//cuPrintf("splitNode:leftPrimBaseIdx:%d, leftCount:%d\n",leftPrimBaseIdx,leftCount);
+		//cuPrintf("splitNode:rightPrimBaseIdx:%d, rightCount:%d\n",rightPrimBaseIdx,rightCount);
+		//cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
 	}
 	
 }

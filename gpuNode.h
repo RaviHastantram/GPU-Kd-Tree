@@ -12,7 +12,7 @@
 #define MAX_DEPTH 10
 
 // a lot of nodes
-#define GPU_NODE_ARRAY_NUM_NODES 1000000
+#define GPU_NODE_ARRAY_NUM_NODES 5000000
 
 // 48 bytes - aligned on 8 byte boundary
 struct GPUNode {

@@ -124,18 +124,17 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 	float min=FLT_MAX;
 	float max=FLT_MIN;
 	uint32 nodeIdx = blockIdx.x + d_gpuNodes->firstActive;
-	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
-	uint32 dim = node->nodeDepth % 3;
-	if(nodeIdx < 0 || nodeIdx > GPU_NODE_ARRAY_NUM_NODES)
+	if(nodeIdx > GPU_NODE_ARRAY_NUM_NODES)
 	{
-		cuPrintf("Out of bounds, nodeIdx=%d\n",nodeIdx);
-		node->splitChoice=SPLIT_NONE;
-		node->isLeaf=true;
+		cuPrintf("Out of bounds, nodeIdx=%d,blockIdx.x=%d,firstActive=%d\n",nodeIdx,blockIdx.x,d_gpuNodes->firstActive);
 		return;
 	}
+	GPUNode * node = d_gpuNodes->getNode(nodeIdx);
+	uint32 dim = node->nodeDepth % 3;
+
 	if(threadIdx.x==0)
 	{
-		cuPrintf("nodeIdx=%d,nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
+		cuPrintf("computeCost:nodeIdx=%d,nodeDepth=%d, primLength=%d, minSize=%d, firstActive=%d\n",
 			nodeIdx,node->nodeDepth, node->primLength, MIN_NODES,d_gpuNodes->firstActive);
 	}
 	if(node->nodeDepth>MAX_DEPTH   || node->primLength <= MIN_NODES)
@@ -154,19 +153,41 @@ __device__ void computeCost(GPUNodeArray * d_gpuNodes, GPUTriangleArray * d_gpuT
 	__syncthreads();
 	while(currIdx<node->primLength)
 	{
-		uint32 triangleID =  triangleIDs[currIdx];
-		Triangle * triangle = &d_triangles[triangleID];
-		for(uint32 j=0;j<3;j++)
+		if(currIdx>GPU_TRIANGLE_ARRAY_SIZE)
 		{
-			uint32 pointID = triangle->ids[j];
-			Point * point = &d_points[pointID];
-			if(point->values[dim]<mins[threadIdx.x])
+			cuPrintf("computeCost:currIdx out of bounds, currIdx=%d\n",currIdx);
+		} 
+		 else 
+		{
+			uint32 triangleID =  triangleIDs[currIdx];
+			if(triangleID>947)
 			{
-				mins[threadIdx.x]=point->values[dim];
-			}
-			if(point->values[dim]>maxs[threadIdx.x])
-			{
-				maxs[threadIdx.x]=point->values[dim];
+				cuPrintf("computeCost:triangleID out of bounds, triangleID=%d, currIdx=%d,primBase=%d, primLength=%d\n",
+					triangleID,currIdx,node->primBaseIdx,node->primLength);
+			} 
+			else
+			{			
+				Triangle * triangle = &d_triangles[triangleID];
+				for(uint32 j=0;j<3;j++)
+				{
+					uint32 pointID = triangle->ids[j];
+					if(pointID>452)
+					{
+						cuPrintf("computeCost:pointID out of bounds, pointID=%d\n",pointID);
+					}
+					else 
+					{
+						Point * point = &d_points[pointID];
+						if(point->values[dim]<mins[threadIdx.x])
+						{
+							mins[threadIdx.x]=point->values[dim];
+						}
+						if(point->values[dim]>maxs[threadIdx.x])
+						{
+							maxs[threadIdx.x]=point->values[dim];
+						}
+					}
+				}
 			}
 		}
 		currIdx += blockDim.x;
@@ -407,7 +428,8 @@ __device__ void splitNodes(GPUNodeArray * d_gpuNodes, GPUTriangleArray  * d_gpuT
 	      
 		d_nodeCounts[blockIdx.x]=1;
 		d_triangleCounts[blockIdx.x]=leftCount+rightCount;
-	
+		cuPrintf("splitNode:leftPrimBaseIdx:%d, leftCount:%d\n",leftPrimBaseIdx,leftCount);
+		cuPrintf("splitNode:rightPrimBaseIdx:%d, rightCount:%d\n",rightPrimBaseIdx,rightCount);
 		cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
 	}
 	

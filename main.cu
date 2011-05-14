@@ -77,9 +77,7 @@ int main(int argc, char  ** argv)
 		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_triangles, d_points);
 		
-		CHECK_ERROR();
-		cudaPrintfDisplay(stdout,true);
-		CHECK_ERROR();
+	
 		HANDLE_ERROR(cudaThreadSynchronize());
 		
 		
@@ -118,6 +116,9 @@ int main(int argc, char  ** argv)
 		// calculate number of triangles in next round
 		numActiveTriangles=countActiveTriangles(d_nodeArray,d_numActiveTriangles, d_triangleCounts);			
 	}
+	CHECK_ERROR();
+		cudaPrintfDisplay(stdout,true);
+		CHECK_ERROR();
 	
 	// allocate host storage for nodes
 	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];

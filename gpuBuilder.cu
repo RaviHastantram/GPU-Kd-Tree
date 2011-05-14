@@ -313,8 +313,8 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 		
 		// sync threads here
 		__syncthreads();
-		cuPrintf("BEFORE:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
-		__syncthreads();
+		//cuPrintf("BEFORE:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
+		//__syncthreads();
 	
 		if(threadIdx.x==0)
 		{
@@ -331,13 +331,13 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 			}
 			leftCount += offL[blockDim.x-1]+offD[blockDim.x-1];
 			rightCount += offR[blockDim.x-1]+offD[blockDim.x-1];
-			cuPrintf("leftCount = %d, rightCount = %d,offL = %d, offD = %d, offR = %d\n",
-				leftCount,rightCount,offL[blockDim.x-1],offD[blockDim.x-1],offR[blockDim.x-1]);
+			//cuPrintf("leftCount = %d, rightCount = %d,offL = %d, offD = %d, offR = %d\n",
+			//	leftCount,rightCount,offL[blockDim.x-1],offD[blockDim.x-1],offR[blockDim.x-1]);
 		}
 	  
 		__syncthreads();
-		cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
-		__syncthreads();
+		//cuPrintf("AFTER:threadIdx.x=%d,offL=%d,offR=%d,offD=%d\n",threadIdx.x,offL[threadIdx.x],offR[threadIdx.x],offD[threadIdx.x]);
+		//__syncthreads();
 	
 		// use an if statement to ensure only valid threads participate
 		if(currIdx < node->primLength) 
@@ -352,12 +352,12 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 
 			//cuPrintf("triangleChoice=%d,tc0=%d, tc1=%d, tc2a=%d, tc2b=%d,L=%d,R=%d\n",triangleChoice,tc0,tc1,tc2a,tc2b,leftOff,rightOff);
 		
-			if(leftBase>10000 || rightBase>10000)
-			{
-				//	cuPrintf("leftBase:%d,rightBase:%d,blockDim.x=%d,currIdx:%d\n",leftBase,rightBase,blockDim.x,currIdx);
-			} 
-			else 
-			{
+			//if(leftBase>10000 || rightBase>10000)
+			//{
+			//	//	cuPrintf("leftBase:%d,rightBase:%d,blockDim.x=%d,currIdx:%d\n",leftBase,rightBase,blockDim.x,currIdx);
+			//} 
+			//else 
+			//{
 				if(triangleChoice==0)
 				{
 					leftList[tc0]=triangleID;
@@ -375,7 +375,7 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 				//cuPrintf("offL:%d, offR:%d, offD:%d\n",offL[blockDim.x-1],offR[blockDim.x-1],offD[blockDim.x-1]);
 				leftBase += offL[blockDim.x-1]+offD[blockDim.x-1];
 				rightBase += offR[blockDim.x-1]+offD[blockDim.x-1];
-			}
+			//}
 		}
 
 		currIdx += blockDim.x;

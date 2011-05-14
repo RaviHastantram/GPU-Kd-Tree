@@ -35,7 +35,7 @@ int main(int argc, char  ** argv)
 	
 	GPUTriangleArray triangleArray=GPUTriangleArray();
 	GPUNodeArray nodeArray=GPUNodeArray();
-
+	
 	int numActiveNodes=1;
 	int numActiveTriangles=m->numTriangles;
 	int threadsPerNode = 0;
@@ -53,9 +53,15 @@ int main(int argc, char  ** argv)
 	printf("initializeActiveNodeList\n");
 	initializeActiveNodeList(nodeArray,triangleArray,m);
 
+	GPUTriangleArray * d_nodeArray;
+	GPUTriangleArray * d_triangleArray;
+
+	HANDLE_ERROR(cudaMemcpy(&d_nodeArray,&nodeArray,sizeof(GPUNodeArray)));
+	HANDLE_ERROR(cudaMemcpy(&d_triangleArray,&triangleArray,sizeof(GPUTriangleArray)));
+
 	CHECK_ERROR();
 
-	while(currIteration <30 && numActiveNodes>0)
+	while(currIteration <3 && numActiveNodes>0)
 	{
 		currIteration++;
 
@@ -72,7 +78,7 @@ int main(int argc, char  ** argv)
 		printf("calling computeCost(%d,%d)\n",numActiveNodes,threadsPerNode);
 		CHECK_ERROR();
 		// compute the split plane and value of each node
-		computeCost <<< numActiveNodes,threadsPerNode >>>(nodeArray, triangleArray, d_nodeCounts, 
+		computeCost <<< numActiveNodes,threadsPerNode >>>(d_nodeArray, d_triangleArray, d_nodeCounts, 
 								d_triangleCounts, d_activeOffset, 
 								d_triangles, d_points);
 		//CHECK_ERROR();
@@ -80,7 +86,7 @@ int main(int argc, char  ** argv)
 		//CHECK_ERROR();
 		
 		HANDLE_ERROR(cudaThreadSynchronize());
-
+		
 		
 		//CHECK_ERROR();
 
@@ -90,9 +96,7 @@ int main(int argc, char  ** argv)
 								d_triangleCounts, d_activeOffset,
 								d_triangles, d_points);
 		CHECK_ERROR();
-		cudaPrintfDisplay(stdout,true);
-		CHECK_ERROR();
-
+		
 		printf("cudaThreadSynchronize\n");
 		// force threads to synchronize globally
 		HANDLE_ERROR(cudaThreadSynchronize());
@@ -114,7 +118,8 @@ int main(int argc, char  ** argv)
 		// calculate number of triangles in next round
 		numActiveTriangles=countActiveTriangles(numActiveNodes,d_numActiveTriangles, d_triangleCounts);		
 	}
-
+	cudaPrintfDisplay(stdout,true);
+	CHECK_ERROR();
 	// allocate host storage for nodes
 	GPUNode * h_gpuNodes=new GPUNode[numTotalNodes];
 

@@ -11,6 +11,7 @@
 #include "cuPrintf.cu"
 
 #define MAX_ITERATIONS 100000
+#define MIN_NODES 10
 
 using namespace std;
 
@@ -126,7 +127,7 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 
 	GPUNode * node = gpuNodes.getNode(nodeIdx);
 	
-	if(node->nodeDepth>MAX_DEPTH)
+	if(node->nodeDepth>MAX_DEPTH   || node->primLength <= MIN_NODES)
 	{
 		node->splitChoice=SPLIT_NONE;
 		node->isLeaf=true;
@@ -137,7 +138,7 @@ __device__ void computeCost(GPUNodeArray gpuNodes, GPUTriangleArray gpuTriangleL
 
 	mins[threadIdx.x]=FLT_MAX;
 	maxs[threadIdx.x]=FLT_MIN;
-
+	__syncthreads();
 	uint32 currIdx = threadIdx.x;
 	//cuPrintf("computeCost:tid=%d, primLength=%d\n",threadIdx.x,node->primLength);
 	while(currIdx<node->primLength && currIdx < MAX_ITERATIONS)
@@ -226,15 +227,18 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	
 	if(threadIdx.x==0)
 	{
-		gpuTriangleList.lock();
+		d_gpuTriangleList->lock();
 
-		leftPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
-		rightPrimBaseIdx=gpuTriangleList.allocateList(node->primLength);
+		leftPrimBaseIdx=d_gpuTriangleList->allocateList(node->primLength);
+		rightPrimBaseIdx=d_gpuTriangleList->allocateList(node->primLength);
 
-		gpuTriangleList.unlock();
+		d_gpuTriangleList->unlock();
 
-		leftList=gpuTriangleList.getList(leftPrimBaseIdx);
-		rightList=gpuTriangleList.getList(rightPrimBaseIdx);
+		leftList=d_gpuTriangleList->getList(leftPrimBaseIdx);
+		rightList=d_gpuTriangleList->getList(rightPrimBaseIdx);
+		
+		cuPrintf("splitNode:leftPrimBaseIdx=%d, rightPrimBaseIdx=%d, node->nodeIdx=%d\n",
+			leftPrimBaseIdx, rightPrimBaseIdx, node->nodeIdx);
 	}
 	__syncthreads();
 	//cuPrintf("tid=%d,leftPrimBaseIdx=%d,rightPrimBaseIdx=%d\n",threadIdx.x,leftPrimBaseIdx,rightPrimBaseIdx);
@@ -365,12 +369,12 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	
 	if(threadIdx.x==0)
 	{
-		gpuNodes.lock();
+		d_gpuNodes->lock();
 
-		GPUNode* leftNode =  gpuNodes.allocateNode();
-		GPUNode* rightNode = gpuNodes.allocateNode();
+		GPUNode* leftNode =  d_gpuNodes->allocateNode();
+		GPUNode* rightNode = d_gpuNodes->allocateNode();
 
-		gpuNodes.unlock();
+		d_gpuNodes->unlock();
 	      
 		node->leftIdx = leftNode->nodeIdx;
 		node->rightIdx = rightNode->nodeIdx;
@@ -386,8 +390,10 @@ __device__ void splitNodes(GPUNodeArray gpuNodes, GPUTriangleArray  gpuTriangleL
 	      
 		d_nodeCounts[blockIdx.x]=1;
 		d_triangleCounts[blockIdx.x]=leftCount+rightCount;
+
+		cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
 	}
-	cuPrintf("splitNode:leftIdx=%d, rightIdx=%d\n",node->leftIdx, node->rightIdx);
+	
 }
 
 ////////////////////////////////

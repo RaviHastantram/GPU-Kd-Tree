@@ -1,0 +1,51 @@
+\title {\textbf{KD Tree Builder using GPU}}
+\author{Randall Smith,  Ravish Hastantram \\
+        Department of Computer Science\\
+        University of Texas at Austin\\
+        Texas, 78702,USA        
+}
+
+\date{\today}
+\documentclass[11pt]{article}
+\usepackage{fullpage}
+%\usepackage{mathptm}
+%\usepackage{times}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{latexsym}
+\usepackage{epsfig}
+\usepackage{amsfonts}
+\usepackage{verbatim} 
+
+
+
+\begin{document}
+\maketitle
+\section{Introduction}
+\section{Algorithm}
+\subsection*{Compute Cost}
+During this stage the split dimension and the split plane is selected. The paper talks about surface Area Heuristic (SAH) in which the bounding box of the scene is binned and the cost associated with each split plane is calculated in parallel.
+\[ f(x) = C_t + C_i. \frac{SA_L(x).N_L(x) + SA_R(x).N_R(x)}{SA_{parent}} \]
+\begin{itemize}
+\item $C_t$ - cost of travesing a inner node.
+\item $C_i$ - cost of intersecting a traingle. 
+\item $SA_L(x) SA_R(x)$ - surface area of the left and the right bounding box.
+\item $N_L, N_R$ - number of primitives on the left / right side.
+\item $SA_{parent}$ - surface of the bounding box of the parent.
+\end{itemize}
+We used a median split algorithm to simplify the compute cost kernel. In median split, a dimension (x,y or z) is selected in random and the mid point is chosen as the position of the split plane. Parallelism is achieved by calculating the split planes of all the active nodes in the tree i.e. nodes in the level currently being built.
+To start with there won't be much parallelism to start with (root), but as the tree is being built multiple nodes are processed at once.
+\subsection*{Split Nodes}
+From the compute cost phase, the split value and the split dimension for a node is calculated. Using these values the triangles in the parent node is copied to the left and right child. The member ship of each triangle in the node i.e. decision to move it to the left or the right child is done in parallel. Each thread works on a triangle and determines whether it belongs to the left or the right child. This is done by maintaining three offset arrays \textit{offL},\textit{offD},\textit{offR} which are initialized to zero before each warp is executed. Each thread works on a triangle and increments \textit{offL} if the triangle is to the left of the split plane,\textit{offR} if the triangle is to the right of the split plane,\textit{D} if the triangle straddles the split plane. Prefix sums are calculated on these offset arrays,
+\section{Nuances of CUDA}
+\subsection*{Dynamic memory allocation}
+\subsection*{Rudimentary Memory manager}
+\subsection*{Premature exit of threads}
+\subsection*{cuda-gdb}
+\subsection*{cuPrintf}
+\subsection*{Local development, system freeze}
+\subsection*{Thrust, scan, reduce}
+\subsection*{•}
+\section{Conclusion}
+\section{References}
+\end{document}

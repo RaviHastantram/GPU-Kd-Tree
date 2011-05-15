@@ -480,24 +480,42 @@ void copyToHost(GPUTriangleArray gpuTriangleArray, GPUNode * h_gpuNodes, uint32 
 	}
 }
 
+struct SSE3Point {
+	float reserved;
+	float x;
+	float y;
+	float z;
+};
+
+struct SSEAABBOX {
+	SSE3Point lo;
+	SSE3Point hi;
+
+};
+
 void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox bounds)
 {
 	ofstream file("GPU-Kd-tree",ios::out | ios::binary);
 
 	char *buffer = new char[100];
+	SSE3Point lo = {0,bounds.min[0],bounds.min[1],bounds.min[2]};
+	SSE3Point hi = {0,bounds.max[0],bounds.max[1],bounds.max[2]};
+	SSEAABBOX bbox = {lo,hi};
 	
-	unsigned int version = 1;
+	unsigned int version = 0x02000000;
 
 	//1. Write the LAYOUT_VERSION.
 	file.write((char*)&version,sizeof(unsigned int));
 
 	//2. Write the Bounds
+	file.write((char*)&bbox,sizeof(SSEAABBOX));
+	/*
 	float zero=0;
 	file.write((char*)&zero,sizeof(float));
 	file.write((char*)&bounds.min,sizeof(float)*3);
 	file.write((char*)&zero,sizeof(float));
 	file.write((char*)&bounds.max,sizeof(float)*3);
-	
+	*/
 	
 	//3. Write the number of nodes.
 	uint64_t n = (uint64_t)numNodes;
@@ -541,7 +559,7 @@ void dumpNode(ofstream& file,uint32 nodeID, GPUNode* nodes)
 	{
 		data0 |= node->leftIdx;
 		data0 <<= 2;
-		data0 |= node->splitChoice;
+		data0 |= (node->splitChoice + 1)%3;
 		
 		data1 = node->splitValue;
 		

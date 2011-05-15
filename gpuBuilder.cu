@@ -503,7 +503,7 @@ void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox 
 	SSEAABBOX bbox = {lo,hi};
 	
 	unsigned int version = 0x0;
-	 version = 0x0200;
+	 version = 0x02;
 
 	//1. Write the LAYOUT_VERSION.
 	file.write((char*)&version,sizeof(unsigned int));

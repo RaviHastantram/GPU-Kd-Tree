@@ -502,7 +502,8 @@ void dumpKDTree(GPUNode * nodes, uint32 numNodes, uint32 numLeaves, BoundingBox 
 	SSE3Point hi = {0,bounds.max[0],bounds.max[1],bounds.max[2]};
 	SSEAABBOX bbox = {lo,hi};
 	
-	unsigned int version = 0x02000000;
+	unsigned int version = 0x0;
+	 version = 0x0200;
 
 	//1. Write the LAYOUT_VERSION.
 	file.write((char*)&version,sizeof(unsigned int));
